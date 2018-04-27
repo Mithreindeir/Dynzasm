@@ -9,6 +9,7 @@ struct trie_node *trie_init(unsigned char key, void *value)
 	node->value = value;
 	node->children = NULL;
 	node->num_children = 0;
+	node->flags = 0;
 
 	return node;
 }
@@ -39,7 +40,7 @@ struct trie_node *trie_lookup(struct trie_node *node, unsigned char *stream, lon
 	return node;
 }
 
-void trie_insert(struct trie_node *root, unsigned char *stream, long max, void *value)
+void trie_insert(struct trie_node *root, unsigned char *stream, long max, void *value, unsigned char flags)
 {
 	struct trie_node *far = root;
 	while (max > 0) {
@@ -69,4 +70,5 @@ void trie_insert(struct trie_node *root, unsigned char *stream, long max, void *
 		max--;
 	}
 	far->value = value;
+	far->flags = flags;
 }

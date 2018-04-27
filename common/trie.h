@@ -14,6 +14,9 @@ struct trie_node {
 	//Distance from the root node
 	int dist;
 
+	//You can set flags for branches
+	unsigned char flags;
+
 	//Key byte
 	unsigned char key;
 	//Opaque pointer to hold entry
@@ -24,7 +27,7 @@ struct trie_node *trie_init(unsigned char key, void *value);
 void trie_destroy(struct trie_node *node);
 
 //Creates path and inserts a value.
-void trie_insert(struct trie_node *root, unsigned char *stream, long max, void *value);
+void trie_insert(struct trie_node *root, unsigned char *stream, long max, void *value, unsigned char flags);
 //Returns the leaf node or branch if there is a lookup conflict
 struct trie_node *trie_lookup(struct trie_node *root, unsigned char *stream, long max);
 

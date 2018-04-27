@@ -38,6 +38,29 @@ void operand_tree_init(struct operand_tree *tree, int type)
 	}
 }
 
+void operand_reg(struct operand_tree *tree, const char *reg)
+{
+	tree->type = DIS_OPER;
+	tree->body.operand.operand_type = DIS_REG;
+	long len = strlen(reg);
+	memcpy(TREE_REG(tree), reg, len>=REG_SIZE?(REG_SIZE-1):len);
+}
+
+void operand_imm(struct operand_tree *tree, const long imm)
+{
+	tree->type = DIS_OPER;
+	tree->body.operand.operand_type = DIS_IMM;
+	TREE_IMM(tree) = imm;
+}
+
+void operand_addr(struct operand_tree *tree, const long addr)
+{
+	tree->type = DIS_OPER;
+	tree->body.operand.operand_type = DIS_IMM;
+	TREE_IMM(tree) = addr;
+}
+
+
 int operand_squash(char *buf, long max, struct operand_tree *tree)
 {
 	if (!tree) return 0;
