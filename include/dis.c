@@ -39,6 +39,17 @@ void operand_tree_init(struct operand_tree *tree, int type)
 	}
 }
 
+void operand_tree_free(struct operand_tree *node)
+{
+	if (node->type == DIS_BRANCH) {
+		for (int i = 0; i < TREE_NCHILD(node); i++) {
+			operand_tree_free(TREE_CHILD(node, i));
+		}
+		free(node->body.op_tree.operands);
+	}
+	free(node);
+}
+
 void operand_tree_add(struct operand_tree *node, struct operand_tree *child)
 {
 	if (!node || node->type != DIS_BRANCH) return;

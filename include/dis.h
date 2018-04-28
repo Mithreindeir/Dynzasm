@@ -67,6 +67,7 @@ void dis_init(struct dis *dis);
 void dis_add_operand(struct dis *dis, struct operand_tree *tree);
 void operand_tree_init(struct operand_tree *tree, int type);
 void operand_tree_add(struct operand_tree *node, struct operand_tree *child);
+void operand_tree_free(struct operand_tree *node);
 /*Convenience initializers for operands*/
 void operand_reg(struct operand_tree *tree, const char *reg);
 void operand_imm(struct operand_tree *tree, const long imm);

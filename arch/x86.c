@@ -1,11 +1,13 @@
 #include "x86.h"
 
-void x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *disas)
+long x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *disas)
 {
-	if (!max) return;
+	if (!max) return 0;
+	long iter = 0;
 	dis_init(disas);
 	/*Find instruction match in the trie*/
-	struct trie_node *n = trie_lookup(root, stream, max);
+	struct trie_node *n = trie_lookup(root, stream+iter, max-iter);
+	iter+=n->dist;
 	u8 flags = 0;
 	while (n->flags == PREFIX_FLAG) {
 		char prefix = n->key;
@@ -20,28 +22,28 @@ void x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 			if (prefix & 0x8)
 				flags |= REX_W;
 		}
-		stream++;
-		max--;
-		n = trie_lookup(root, stream, max);
+		if (prefix == 0x66)
+			flags |= OPER_SIZE_OVERRIDE;
+		if (prefix == 0x67)
+			flags |= ADDR_SIZE_OVERRIDE;
+		n = trie_lookup(root, stream+iter, max-iter);
+		iter+=n->dist;
 	}
 	/*Some instructions have an opcode extension in the reg part of the modrm byte*/
 	if (n->flags == REG_EXT_FLAG) {
-		u8 sv = stream[1];
+		u8 sv = stream[iter];
 		//Zero out everything but the reg 3 bits
-		sv &= 0x38;
-		n = trie_lookup(root, &sv, 1);
+		sv = (sv&0x38)>>3;
+		n = trie_lookup(n, &sv, 1);
 	}
 	/*If the instruction is not found, then die*/
 	if (!n || !n->value) {
 		printf("Unable to disassemble\n");
-		return;
+		return iter;
 	}
 
-	stream += n->dist;
-	max -= n->dist;
-
-	u8 *operand_stream = stream;
-	long operand_max = max;
+	u8 *operand_stream = stream+iter;
+	long operand_max = max-iter;
 
 	struct x86_instr_entry *e = n->value;
 	/*Set mnemonic*/
@@ -54,13 +56,12 @@ void x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 		if (e->operand[i][0]=='G') {
 			(void)x86_decode_operand(&operand, e->operand[i], flags, operand_stream, operand_max);
 		} else {
-			long s = x86_decode_operand(&operand, e->operand[i], flags, stream, max);
-			stream += s;
-			max -= s;
+			iter += x86_decode_operand(&operand, e->operand[i], flags, stream+iter, max-iter);
 		}
 		if (operand)
 			dis_add_operand(disas, operand);
 	}
+	return iter;
 }
 
 /*Decodes operand information and passes it on to be disassembled. Returns used bytes*/
@@ -75,7 +76,8 @@ long x86_decode_operand(struct operand_tree **opt, char *operand, u8 flags, u8 *
 	/*If the operand is an addressing mode, then it will be a capital letter, otherwise a value*/
 	if (operand[0] >= 'A' && operand[0] <= 'Z') {
 		/*Set operand size*/
-		operand_size = x86_operand_size(operand_size, operand[1], flags);
+		if (operand[1])
+			operand_size = x86_operand_size(operand_size, operand[1], flags);
 		iter += x86_disassemble_operand(opt, operand[0], operand_size, addr_size, stream+iter, max-iter, flags);
 	} else {
 		/*Check if its a register*/
@@ -97,32 +99,42 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op
 	/*Construct operand based on addressing mode, size, and flags*/
 	switch (addr_mode) {
 		/*MODRM Encoding*/
-		case 'E': /*Modrm encoding*/
+		case 'E': /*Modrm encoding dword [ebx+4] <- this thing */
 			iter += x86_decode_modrm(operand, op_size, addr_size, stream, max, flags);
 			break;
-		case 'G':; /*Register modrm encoding*/
+		case 'G':; /*Register modrm encoding ->>> eax, <<-- dword [eax] */
 			u8 mrmreg = (stream[0] & 0x38) >> 3;
-			const char *reg = get_register(mrmreg, op_size, CHECK_FLAG(flags, REX_B));
+			const char *reg = get_register(mrmreg, op_size, CHECK_FLAG(flags, REX_R));
 			*operand = malloc(sizeof(struct operand_tree));
 			operand_reg(*operand, reg);
 			break;
 		case 'I':; /*Immediate Value*/
 			uint64_t imm = 0;
-			if (op_size==4) {
-				imm=*((uint64_t*)(stream+iter));
-				iter += 8;
-			} else if (op_size==3) {
-				imm = *((uint32_t*)(stream+iter));
-				iter += 4;
-			} else if (op_size == 2) {
-				imm = *(uint16_t*)(stream+iter);
-				iter += 2;
-			} else {
-				imm = stream[iter++];
-			}
+			iter += get_integer(&imm, op_size, stream, max);
+			if (op_size == 1 && imm > 0x80) imm = 0x100 - imm;
 			*operand = malloc(sizeof(struct operand_tree));
 			operand_imm(*operand, imm);
 			break;
+		case 'J':; /*Relative address */
+			uint64_t addr = 0;
+			iter += get_integer(&addr, op_size, stream, max);
+			*operand = malloc(sizeof(struct operand_tree));
+			operand_addr(*operand, addr);
+			break;
+		case 'O':; /*Offset*/
+			uint64_t offset = 0;
+			iter += get_integer(&offset, op_size, stream, max);
+			*operand=x86_indir_operand_tree(op_size, NULL,NULL,1,offset);
+			break;
+		case 'A':; /*Direct Addressing*/
+			uint64_t daddr = 0;
+			iter += get_integer(&daddr, op_size, stream, max);
+			*operand = malloc(sizeof(struct operand_tree));
+			operand_addr(*operand, daddr);
+			 break;
+		case 'M':; /*Memory addres. (modrm but with an operand size of 0*/
+			iter += x86_decode_modrm(operand, 0, addr_size, stream, max, flags);
+			 break;
 	}
 	return iter;
 }
@@ -183,6 +195,7 @@ long x86_decode_sib(struct operand_tree **operand, int op_size, int addr_size, u
 {
 	long iter = 0;
 
+	if (!max) return 0;
 	/*This is safe because decode sib must be called from the decode modrm function*/
 	u8 mod = ((stream[-1] & 0xc0) >> 6);
 	u8 sib = stream[iter++];
@@ -227,8 +240,9 @@ struct operand_tree *x86_indir_operand_tree(int op_size, const char *base, const
 	char buf[32];
 	memset(buf, 0, 32);
 	int iter = 0;
-	iter += snprintf(buf+iter, 32-iter, "%s [", operand_size_prefix[op_size-1]);
-
+	if (op_size >= 1 && op_size <= 4)
+		iter += snprintf(buf+iter, 32-iter, "%s ", operand_size_prefix[op_size-1]);
+	iter += snprintf(buf+iter, 32-iter, "[");
 	/*Possible parameters: base op, index op, scale op, offset op*/
 	struct operand_tree *bop = NULL, *iop = NULL, *sop = NULL, *oop = NULL;
 	if (base) {
@@ -241,7 +255,10 @@ struct operand_tree *x86_indir_operand_tree(int op_size, const char *base, const
 		iop = malloc(sizeof(struct operand_tree));
 		operand_reg(iop, index);
 		operand_tree_add(indir, iop);
-		iter += snprintf(buf+iter, 32-iter, "+$%d", TREE_NCHILD(indir)-1);
+		if (base)
+			iter += snprintf(buf+iter, 32-iter, "+$%d", TREE_NCHILD(indir)-1);
+		else
+			iter += snprintf(buf+iter, 32-iter, "$%d", TREE_NCHILD(indir)-1);
 	}
 	if (scale != 1) {
 		sop = malloc(sizeof(struct operand_tree));
@@ -253,7 +270,11 @@ struct operand_tree *x86_indir_operand_tree(int op_size, const char *base, const
 		oop = malloc(sizeof(struct operand_tree));
 		operand_addr(oop, offset);
 		operand_tree_add(indir, oop);
-		iter += snprintf(buf+iter, 32-iter, "+$%d", TREE_NCHILD(indir)-1);
+		if (TREE_NCHILD(indir)==1)
+			iter += snprintf(buf+iter, 32-iter, "$%d", TREE_NCHILD(indir)-1);
+		else
+			iter += snprintf(buf+iter, 32-iter, "+$%d", TREE_NCHILD(indir)-1);
+
 	}
 	iter += snprintf(buf+iter, 32-iter, "]");
 	strcpy(TREE_FORMAT(indir), buf);
@@ -277,4 +298,25 @@ int x86_operand_size(int op_size, char size_byte, u8 flags)
 		case 'q': return 4;
 	}
 	return op_size;
+}
+
+long get_integer(uint64_t *val, int size, u8 *stream, long max)
+{
+	if (size == 4) {
+		if (max < 8) return max;
+		*val = *(uint64_t*)stream;
+		return 8;
+	} else if (size == 3) {
+		if (max < 4) return max;
+		*val = *(uint32_t*)stream;
+		return 4;
+	} else if (size == 2) {
+		if (max < 2) return max;
+		*val = *(uint16_t*)stream;
+		return 2;
+	} else {
+		if (!max) return 0;
+		*val = stream[0];
+		return 1;
+	}
 }

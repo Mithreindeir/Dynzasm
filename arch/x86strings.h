@@ -9,6 +9,12 @@
 /*X86 General Registers*/
 extern const char * general_registers[64];
 
+/*X86 XMM Registers*/
+extern const char * xmm_registers[8];
+
+/*X86 MMX Registers*/
+extern const char * mm_registers[8];
+
 /*Operand Size Prefix Strings*/
 extern const char *operand_size_prefix[4];
 

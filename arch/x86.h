@@ -38,12 +38,13 @@
 
 typedef unsigned char u8;
 
-void x86_disassemble(struct trie_node *node, u8 *stream, long max, struct dis *disas);
+long x86_disassemble(struct trie_node *node, u8 *stream, long max, struct dis *disas);
 long x86_decode_operand(struct operand_tree **opt, char *operand, u8 flags, u8 *stream, long max);
 int x86_operand_size(int op_size, char size_byte, u8 flags);
 long x86_decode_modrm(struct operand_tree **operand, int op_size, int addr_size, u8 *stream, long max, u8 flags);
 long x86_decode_sib(struct operand_tree **operand, int op_size, int addr_size, u8 *stream, long max, u8 flags);
 long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op_size, int addr_size, u8 *stream, long max, u8 flags);
 struct operand_tree *x86_indir_operand_tree(int op_size, const char *base, const char *index, long scale, unsigned long offset);
+long get_integer(uint64_t * val, int size, u8 *stream, long max);
 
 #endif

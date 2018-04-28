@@ -99,8 +99,8 @@
 63 movsxd Gv Ed
 64 fs
 65 gs
-66 ov
-67 av
+66 ov f:4
+67 av f:4
 68 push Id
 69 imul Gv Ev Id
 6a push Ib
@@ -135,7 +135,7 @@
 8006 xor Eb Ib
 8007 cmp Eb Ib
 81 grp1 f:2
-8100 and Eb Id
+8100 add Eb Id
 8101 or Eb Id
 8102 adc Eb Id
 8103 sbb Eb Id
@@ -145,7 +145,7 @@
 8107 cmp Eb Id
 82 invalid
 83 grp1 f:2
-8300 and Eb Id
+8300 add Ev Ib
 8301 or Ev Ib
 8302 adc Ev Ib
 8303 sbb Ev Ib
@@ -162,7 +162,7 @@
 8a mov Gb Eb
 8b mov Gv Ev
 8c mov Ew Sw
-8d lea Gv
+8d lea Gv M
 8e mov Sw Ew
 8f pop Ev
 90 nop
@@ -205,16 +205,32 @@ b4 mov ah Ib
 b5 mov ch Ib
 b6 mov dh Ib
 b7 mov bh Ib
-b8 mov rax Iv
-b9 mov rcx Iv
-ba mov rdx Iv
-bb mov rbx Iv
-bc mov rsp Iv
-bd mov rbp Iv
-be mov rsi Iv
-bf mov rdi Iv
-c0 grp2d Eb Ib
-c1 grp2d Ev Ib
+b8 mov eax Iv
+b9 mov ecx Iv
+ba mov edx Iv
+bb mov ebx Iv
+bc mov esp Iv
+bd mov ebp Iv
+be mov esi Iv
+bf mov edi Iv
+c0 grp2 f:2
+c000 rol Eb Ib
+c001 ror Eb Ib
+c002 rcl Eb Ib
+c003 rcr Eb Ib
+c004 shl Eb Ib
+c005 shr Eb Ib
+c006 sal Eb Ib
+c007 sar Eb Ib
+c1 grp2 f:2
+c100 rol Ev Ib
+c101 ror Ev Ib
+c102 rcl Ev Ib
+c103 rcr Ev Ib
+c104 shl Ev Ib
+c105 shr Ev Ib
+c106 sal Ev Ib
+c107 sar Ev Ib
 c2 ret Iw
 c3 ret
 c4 invalid
@@ -293,10 +309,10 @@ ec in al dx
 ed in eax dx
 ee out dx al
 ef out dx eax
-f0
-f1
-f2
-f3
+f0 lock f:4
+f1 icebp
+f2 repne f:2
+f3 repe f:2
 f4 hlt
 f5 cmc
 f6 grp3a f:2
@@ -334,3 +350,279 @@ ff03 callf
 ff04 jmp Eq
 ff05 jmp Ep
 ff06 push Eq
+0f00 grp6d f:2
+0f0000 sldr Ew
+0f0001 str Ew
+0f0002 lldt Ew
+0f0003 ltr Ew
+0f0004 verr Ew
+0f0005 verw Ew
+0f01 grp7a f:2
+0f0100 sgdt Ms
+0f0101 sidt Ms
+0f0102 ldgt Ms
+0f0103 lidt Ms
+0f0104 smsw Ew
+0f0106 lmsw Ew
+0f02 lar Gw Ew
+0f03 lsl Gv Ew
+0f04
+0f05
+0f06 ctls
+0f07
+0f08
+0f09
+0f0a
+0f0b
+0f0c
+0f0d
+0f0e
+0f0f
+0f10 mov Vd Wd
+0f11 mov Wd Vd
+0f12
+0f13
+0f14
+0f15
+0f16
+0f17
+0f18
+0f19
+0f1a
+0f1b
+0f1c
+0f1d
+0f1e
+0f1f grp9 f:2
+0f1f00 nop Ev
+0f1f01 nop Ev
+0f1f02 nop Ev
+0f1f03 nop Ev
+0f1f04 nop Ev
+0f1f05 nop Ev
+0f1f06 nop Ev
+0f1f07 nop Ev
+0f20 mov Rd Cd
+0f21 mov Rd Dd
+0f22 mov Cd Rd
+0f23 mov Dd Rd
+0f24 mov Rd Td
+0f25
+0f26 mov Td Rd
+0f27
+0f28
+0f29
+0f2a cvt
+0f2b
+0f2c cvtt
+0f2d
+0f2e
+0f2f
+0f30
+0f31
+0f32
+0f33
+0f34
+0f35
+0f36
+0f37
+0f38
+0f39
+0f3a
+0f3b
+0f3c
+0f3d
+0f3e
+0f3f
+0f40 cmovo Gv Ev
+0f41 cmovno Gv Ev
+0f42 cmovb Gv Ev
+0f43 cmovnb Gv Ev
+0f44 cmovz Gv Ev
+0f45 cmovnz Gv Ev
+0f46 cmovbe Gv Ev
+0f47 cmova Gv Ev
+0f48 cmovs Gv Ev
+0f49 cmovns Gv Ev
+0f4a cmovp Gv Ev
+0f4b cmovnp Gv Ev
+0f4c cmovl Gv Ev
+0f4d cmovge Gv Ev
+0f4e cmovng Gv Ev
+0f4f cmovg Gv Ev
+0f50
+0f51
+0f52
+0f53
+0f54
+0f55
+0f56
+0f57
+0f58 add Vd Wd
+0f59 mul Vd Wd
+0f5a cvt Vd Wd
+0f5b
+0f5c
+0f5d
+0f5e
+0f5f
+0f60
+0f61
+0f62
+0f63
+0f64
+0f65
+0f66
+0f67
+0f68
+0f69
+0f6a
+0f6b
+0f6c
+0f6d
+0f6e
+0f6f
+0f70
+0f71
+0f72
+0f73
+0f74
+0f75
+0f76
+0f77
+0f78
+0f79
+0f7a
+0f7b
+0f7c
+0f7d
+0f7e
+0f7f
+0f80 jo Jv
+0f81 jno Jv
+0f82 jb Jv
+0f83 jnb Jv
+0f84 jz Jv
+0f85 jnz Jv
+0f86 jbe Jv
+0f87 jnbe Jv
+0f88 js Jv
+0f89 jns Jv
+0f8a jp Jv
+0f8b jnp Jv
+0f8c jl Jv
+0f8d jge Jv
+0f8e jle Jv
+0f8f jg Jv
+0f90 seto Eb
+0f91 setno Eb
+0f92 setb Eb
+0f93 setnb Eb
+0f94 setz Eb
+0f95 setnz Eb
+0f96 setbe Eb
+0f97 setnbe Eb
+0f98 sets Eb
+0f99 setns Eb
+0f9a setp Eb
+0f9b setnp Eb
+0f9c setl Eb
+0f9d setnl Eb
+0f9e setle Eb
+0f9f setnle Eb
+0fa0 push fs
+0fa1 pop fs
+0fa2
+0fa3 bt Ev Gv
+0fa4 shld Ev Gv Ib
+0fa5 shld Ev Gv cl
+0fa6
+0fa7
+0fa8 push gs
+0fa9 pop gs
+0faa
+0fab bts Ev Gv
+0fac shrd Ev Gv Ib
+0fad shrd Ev Gv cl
+0fae
+0faf imul Gv Ev
+0fb0
+0fb1
+0fb2 lss Mp
+0fb3 btr Ev Gv
+0fb4 lfs Mp
+0fb5 lgs Mp
+0fb6 movzx Gv Eb
+0fb7 movzx Gv Ew
+0fb8
+0fb9
+0fba grp8d Ev Ib
+0fbb btc Ev Gv
+0fbc bsf Gv Ev
+0fbd bsr Gv Ev
+0fbe movsx Gv Eb
+0fbf movsx Gv Ew
+0fc0
+0fc1
+0fc2
+0fc3
+0fc4
+0fc5
+0fc6
+0fc7
+0fc8
+0fc9
+0fca
+0fcb
+0fcc
+0fcd
+0fce
+0fcf
+0fd0
+0fd1
+0fd2
+0fd3
+0fd4
+0fd5
+0fd6
+0fd7
+0fd8
+0fd9
+0fda
+0fdb
+0fdc
+0fdd
+0fde
+0fdf
+0fe0
+0fe1
+0fe2
+0fe3
+0fe4
+0fe5
+0fe6
+0fe7
+0fe8
+0fe9
+0fea
+0feb
+0fec
+0fed
+0fee
+0fef
+0ff0
+0ff1
+0ff2
+0ff3
+0ff4
+0ff5
+0ff6
+0ff7
+0ff8
+0ff9
+0ffa
+0ffb
+0ffc
+0ffd
+0ffe
+0fff

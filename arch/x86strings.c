@@ -19,6 +19,14 @@ const char * general_registers[64] = {
 	"r15b", "r15w", "r15d", "r15"
 };
 
+const char * xmm_registers[8] = {
+	"xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
+};
+
+const char * mm_registers[8] = {
+	"mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7"
+};
+
 const char * operand_size_prefix[4] = {
 	"byte", "word", "dword", "qword"
 };
@@ -26,13 +34,13 @@ const char * operand_size_prefix[4] = {
 const char *get_register(int reg, int size, int rexb)
 {
 	int idx = reg * 4 + size-1 + rexb  * 32;
-	if (idx >= (sizeof(general_registers)/sizeof(char*))) return NULL;
+	if (idx >= (signed int)(sizeof(general_registers)/sizeof(char*))) return NULL;
 	return general_registers[idx];
 }
 
 int get_register_index(const char *reg)
 {
-	for (int i = 0; i < (sizeof(general_registers)/sizeof(char*)); i++) {
+	for (int i = 0; i < (signed int)(sizeof(general_registers)/sizeof(char*)); i++) {
 		if (!strcmp(reg, general_registers[i])) return i;
 	}
 	return -1;
