@@ -1,0 +1,336 @@
+00 add Eb Gb
+01 add Ev Gv
+02 add Gb Eb
+03 add Gv Ev
+04 add al Ib
+05 add rax Id
+06 invalid
+07 invalid
+08 or Eb Gb
+09 or Ev Gv
+0a or Gb Eb
+0b or Gv Ev
+0c or al Ib
+0d or rax Id
+0e invalid
+10 adc Eb Gb
+11 adc Ev Gv
+12 adc Gb Eb
+13 adc Gv Ev
+14 adc al Ib
+15 adc rax Id
+16 invalid
+17 invalid
+18 sbb Eb Gb
+19 sbb Ev Gv
+1a sbb Gb Eb
+1b sbb Gv Ev
+1c sbb al Ib
+1d sbb rax Id
+1e invalid
+1f invalid
+20 and Eb Gb
+21 and Ev Gv
+22 and Gb Eb
+23 and Gv Ev
+24 and al Ib
+25 and eax Id
+26 null
+27 invalid
+28 sub Eb Gb
+29 sub Ev Gv
+2a sub Gb Eb
+2b sub Gv Ev
+2c sub al Ib
+2d sub rax Id
+2e null
+2f invalid
+30 xor Eb Gb
+31 xor Ev Gv
+32 xor Gb Eb
+33 xor Gv Ev
+34 xor al Ib
+35 xor eax Id
+36 null
+37 invalid
+38 cmp Eb Gb
+39 cmp Ev Gv
+3a cmp Gb Eb
+3b cmp Gv Ev
+3c cmp al Ib
+3d cmp rax Id
+3e null
+3f invalid
+40 rex f:4
+41 rex.b f:4
+42 rex.x f:4
+43 rex.xb f:4
+44 rex.r f:4
+45 rex.rb f:4
+46 rex.rx f:4
+47 rex.rxb f:4
+48 rex.w f:4
+49 rex.wb f:4
+4a rex.wx f:4
+4b rex.wxb f:4
+4c rex.wr f:4
+4d rex.wrb f:4
+4e rex.wrx f:4
+4f rex.wrxb f:4
+50 push rax
+51 push rcx
+52 push rdx
+53 push rbx
+54 push rsp
+55 push rbp
+56 push rsi
+57 push rdi
+58 pop rax
+59 pop rcx
+5a pop rdx
+5b pop rbx
+5c pop rsp
+5d pop rbp
+5e pop rsi
+5f pop rdi
+60 invalid
+61 invalid
+62 invalid
+63 movsxd Gv Ed
+64 fs
+65 gs
+66 ov
+67 av
+68 push Id
+69 imul Gv Ev Id
+6a push Ib
+6b imul Gv Ev Ib
+6c insb Yb dx
+6d insw Yb dx
+6e outsb Dx Xb
+6f outsw dx Xv
+70 jo Jb
+71 jno Jb
+72 jb Jb
+73 jnb Jb
+74 jz Jb
+75 jnz Jb
+76 jbe Jb
+77 jnbe Jb
+78 js Jb
+79 jns Jb
+7a jp Jb
+7b jnp Jb
+7c jl Jb
+7d jge Jb
+7e jle Jb
+7f jg Jb
+80 grp1 f:2
+8000 and Eb Ib
+8001 or Eb Ib
+8002 adc Eb Ib
+8003 sbb Eb Ib
+8004 and Eb Ib
+8005 sub Eb Ib
+8006 xor Eb Ib
+8007 cmp Eb Ib
+81 grp1 f:2
+8100 and Eb Id
+8101 or Eb Id
+8102 adc Eb Id
+8103 sbb Eb Id
+8104 and Eb Id
+8105 sub Eb Id
+8106 xor Eb Id
+8107 cmp Eb Id
+82 invalid
+83 grp1 f:2
+8300 and Eb Id
+8301 or Ev Ib
+8302 adc Ev Ib
+8303 sbb Ev Ib
+8304 and Ev Ib
+8305 sub Ev Ib
+8306 xor Ev Ib
+8307 cmp Ev Ib
+84 test Eb Gb
+85 test Ev Gv
+86 xchg Eb Gb
+87 xchg Ev Gv
+88 mov Eb Gb
+89 mov Ev Gv
+8a mov Gb Eb
+8b mov Gv Ev
+8c mov Ew Sw
+8d lea Gv
+8e mov Sw Ew
+8f pop Ev
+90 nop
+91 xchg rcx rax
+92 xchg rdx rax
+93 xchg rbx rax
+94 xchg rsp rax
+95 xchg rbp rax
+96 xchg rsi rax
+97 xchg rdi rax
+98 cbw
+99 cwd
+9a invalid
+9b wait
+9c pushf Fv
+9d popf Fv
+9e sahf
+9f lahf
+a0 mov al Ob
+a1 mov eax Ov
+a2 mov Ob al
+a3 mov Ov eax
+a4 movsb Xb Yb
+a5 movsw Xv Yv
+a6 cmpsb Xb Yb
+a7 cmpsw Xv Yv
+a8 test al Ib
+a9 test eax Id
+aa stosb Yb al
+ab stosw Yv eax
+ac lodsb al Xb
+ad lodsw eax Xv
+ae scasb al Xb
+af scasw eax Xv
+b0 mov al Ib
+b1 mov cl Ib
+b2 mov dl Ib
+b3 mov bl Ib
+b4 mov ah Ib
+b5 mov ch Ib
+b6 mov dh Ib
+b7 mov bh Ib
+b8 mov rax Iv
+b9 mov rcx Iv
+ba mov rdx Iv
+bb mov rbx Iv
+bc mov rsp Iv
+bd mov rbp Iv
+be mov rsi Iv
+bf mov rdi Iv
+c0 grp2d Eb Ib
+c1 grp2d Ev Ib
+c2 ret Iw
+c3 ret
+c4 invalid
+c5 invalid
+c6 mov Eb Ib
+c7 mov Ev Id
+c8 enter Iw Ib
+c9 leave
+ca retf Iw
+cb retf
+cc int
+cd int Ib
+ce into
+cf iret
+d0 grp2 f:2
+d000 rol Eb
+d001 ror Eb
+d002 rcl Eb
+d003 rcr Eb
+d004 shl Eb
+d005 sal Eb
+d006 shr Eb
+d007 shl Eb
+d1 grp2 f:2
+d100 rol Ev
+d101 ror Ev
+d102 rcl Ev
+d103 rcr Ev
+d104 shl Ev
+d105 sal Ev
+d106 shr Ev
+d107 shl Ev
+d2 grp2 f:2
+d200 rol Eb cl
+d201 ror Eb cl
+d202 rcl Eb cl
+d203 rcr Eb cl
+d204 shl Eb cl
+d205 sal Eb cl
+d206 shr Eb cl
+d207 shl Eb cl
+d3 grp2 f:2
+d300 rol Ev cl
+d301 ror Ev cl
+d302 rcl Ev cl
+d303 rcr Ev cl
+d304 shl Ev cl
+d305 sal Ev cl
+d306 shr Ev cl
+d307 shl Ev cl
+d4 invalid
+d5 invalid
+d6 invalid
+d7 xlat
+d8
+d9
+da
+db
+dc
+dd
+de
+df
+e0 loopne Jb
+e1 loope Jb
+e2 loop Jb
+e3 jcxz Jb
+e4 in al Ib
+e5 in eaxa Ib
+e6 out Ib al
+e7 out Ib eax
+e8 call Av
+e9 jmp Jv
+ea
+eb jmp Jb
+ec in al dx
+ed in eax dx
+ee out dx al
+ef out dx eax
+f0
+f1
+f2
+f3
+f4 hlt
+f5 cmc
+f6 grp3a f:2
+f600 test Eb Ib
+f601 test Eb Ib
+f602 not Eb
+f603 neg Eb
+f604 mul Eb
+f605 imul Eb
+f606 div Eb
+f607 idiv Eb
+f7 grp3a f:2
+f700 test Ev Iv
+f701 test Ev Iv
+f702 not Ev
+f703 neg Ev
+f704 mul Ev
+f705 imul Ev
+f706 div Ev
+f707 idiv Ev
+f8 clc
+f9 stc
+fa cli
+fb sti
+fc cld
+fd std
+fe grp4 f:2
+fe00 inc Eb
+fe01 dec Eb
+ff grp5 f:2
+ff00 inc Ev
+ff01 dec Ev
+ff02 call Ev
+ff03 callf
+ff04 jmp Eq
+ff05 jmp Ep
+ff06 push Eq

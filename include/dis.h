@@ -17,6 +17,7 @@
 #define SQUASH_SIZE 	128
 #define GROUP_SIZE 	8
 #define REG_SIZE 	8
+#define FMT_SIZE 	32
 
 //Macros for easy tree access
 #define TREE_REG(t) (t->body.operand.operand_val.reg)
@@ -24,6 +25,7 @@
 #define TREE_IMM(t) (t->body.operand.operand_val.imm)
 #define TREE_CHILD(t, idx) (t->body.op_tree.operands[idx])
 #define TREE_NCHILD(t) (t->body.op_tree.num_operands)
+#define TREE_FORMAT(t) (t->body.op_tree.format)
 
 /* Operand Tree
  * Can represent arbitrarily complex addressing modes.
@@ -35,14 +37,15 @@ struct operand_tree {
 		struct {
 			struct operand_tree **operands;
 			int num_operands;
+			char format[FMT_SIZE];
 		} op_tree;
 
 		struct {
 			int operand_type;
 			union {
 				char reg[REG_SIZE];
-				long addr;
-				long imm;
+				unsigned long addr;
+				unsigned long imm;
 			} operand_val;
 		} operand;
 	} body;
@@ -63,6 +66,7 @@ struct dis {
 void dis_init(struct dis *dis);
 void dis_add_operand(struct dis *dis, struct operand_tree *tree);
 void operand_tree_init(struct operand_tree *tree, int type);
+void operand_tree_add(struct operand_tree *node, struct operand_tree *child);
 /*Convenience initializers for operands*/
 void operand_reg(struct operand_tree *tree, const char *reg);
 void operand_imm(struct operand_tree *tree, const long imm);
