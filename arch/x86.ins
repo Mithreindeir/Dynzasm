@@ -235,8 +235,10 @@ c2 ret Iw
 c3 ret
 c4 invalid
 c5 invalid
-c6 mov Eb Ib
-c7 mov Ev Id
+c6 invext f:2
+c600 mov Eb Ib
+c7 invalid f:2
+c700 mov Ev Id
 c8 enter Iw Ib
 c9 leave
 ca retf Iw
@@ -246,14 +248,14 @@ cd int Ib
 ce into
 cf iret
 d0 grp2 f:2
-d000 rol Eb
-d001 ror Eb
-d002 rcl Eb
-d003 rcr Eb
-d004 shl Eb
-d005 sal Eb
-d006 shr Eb
-d007 shl Eb
+d000 rol Eb 1
+d001 ror Eb 1
+d002 rcl Eb 1
+d003 rcr Eb 1
+d004 shl Eb 1
+d005 sal Eb 1
+d006 shr Eb 1
+d007 shl Eb 1
 d1 grp2 f:2
 d100 rol Ev
 d101 ror Ev

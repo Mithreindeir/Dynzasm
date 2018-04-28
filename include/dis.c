@@ -71,18 +71,18 @@ void operand_reg(struct operand_tree *tree, const char *reg)
 	TREE_REG(tree)[len] = 0;
 }
 
-void operand_imm(struct operand_tree *tree, const long imm)
+void operand_imm(struct operand_tree *tree, const unsigned long imm)
 {
 	operand_tree_init(tree, DIS_OPER);
 	tree->body.operand.operand_type = DIS_IMM;
 	TREE_IMM(tree) = imm;
 }
 
-void operand_addr(struct operand_tree *tree, const long addr)
+void operand_addr(struct operand_tree *tree, const unsigned long addr)
 {
 	operand_tree_init(tree, DIS_OPER);
-	tree->body.operand.operand_type = DIS_IMM;
-	TREE_IMM(tree) = addr;
+	tree->body.operand.operand_type = DIS_ADDR;
+	TREE_ADDR(tree) = addr;
 }
 
 

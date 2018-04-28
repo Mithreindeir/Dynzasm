@@ -70,8 +70,8 @@ void operand_tree_add(struct operand_tree *node, struct operand_tree *child);
 void operand_tree_free(struct operand_tree *node);
 /*Convenience initializers for operands*/
 void operand_reg(struct operand_tree *tree, const char *reg);
-void operand_imm(struct operand_tree *tree, const long imm);
-void operand_addr(struct operand_tree *tree, const long addr);
+void operand_imm(struct operand_tree *tree, const unsigned long imm);
+void operand_addr(struct operand_tree *tree, const unsigned long addr);
 
 int operand_squash(char *buf, long max, struct operand_tree *tree);
 

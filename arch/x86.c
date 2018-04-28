@@ -38,8 +38,7 @@ long x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 	}
 	/*If the instruction is not found, then die*/
 	if (!n || !n->value) {
-		printf("Unable to disassemble\n");
-		return iter;
+		return iter+1;
 	}
 
 	u8 *operand_stream = stream+iter;
@@ -86,7 +85,9 @@ long x86_decode_operand(struct operand_tree **opt, char *operand, u8 flags, u8 *
 			*opt = malloc(sizeof(struct operand_tree));
 			operand_reg(*opt, operand);
 		} else {
-
+			long val = strtol(operand, NULL, 0);
+			*opt = malloc(sizeof(struct operand_tree));
+			operand_imm(*opt, val);
 		}
 	}
 	return iter;
@@ -123,7 +124,7 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op
 			break;
 		case 'O':; /*Offset*/
 			uint64_t offset = 0;
-			iter += get_integer(&offset, op_size, stream, max);
+			iter += get_integer(&offset, addr_size, stream, max);
 			*operand=x86_indir_operand_tree(op_size, NULL,NULL,1,offset);
 			break;
 		case 'A':; /*Direct Addressing*/
@@ -158,6 +159,7 @@ long x86_decode_modrm(struct operand_tree **operand, int op_size, int addr_size,
 	if (MODRM_DISPONLY(mod, rm)) {
 		if (max < 4) return iter;
 		*operand = x86_indir_operand_tree(op_size, "rip", NULL, 1, *(uint32_t*)stream);
+		return iter;
 	}
 
 	const char *reg;
@@ -169,16 +171,14 @@ long x86_decode_modrm(struct operand_tree **operand, int op_size, int addr_size,
 			break;
 		case MODRM_1DISP:
 			reg = get_register(rm, addr_size, CHECK_FLAG(flags, REX_B));
-			unsigned char bdisp = stream[iter++];
-			bdisp = bdisp > 0x80 ? 0x100 - bdisp : bdisp;
-			*operand = x86_indir_operand_tree(op_size, reg, NULL, 1, bdisp);
+			uint64_t bdisp = (int64_t)(signed char)stream[iter++];
+			printf("%lx\n", bdisp);
+			*operand = x86_indir_operand_tree(op_size, reg, NULL, 1, (signed long)bdisp);
 			break;
 		case MODRM_4DISP:
 			reg = get_register(rm, addr_size, CHECK_FLAG(flags, REX_B));
-			uint32_t disp = *(uint32_t*)(stream+iter);
+			uint64_t disp = *(int32_t*)(stream+iter);
 			iter += 4;
-			if (disp > 0x80000000)
-				disp = 0x100000000 - disp;
 			*operand = x86_indir_operand_tree(op_size, reg, NULL, 1, disp);
 			break;
 		case MODRM_REG:
@@ -194,7 +194,6 @@ long x86_decode_modrm(struct operand_tree **operand, int op_size, int addr_size,
 long x86_decode_sib(struct operand_tree **operand, int op_size, int addr_size, u8 *stream, long max, u8 flags)
 {
 	long iter = 0;
-
 	if (!max) return 0;
 	/*This is safe because decode sib must be called from the decode modrm function*/
 	u8 mod = ((stream[-1] & 0xc0) >> 6);
@@ -210,19 +209,19 @@ long x86_decode_sib(struct operand_tree **operand, int op_size, int addr_size, u
 	if (!SIB_NO_INDEX(idx)) index = get_register(idx, addr_size, CHECK_FLAG(flags, REX_X));
 	if (!SIB_NO_BASE(mod, bse)) base = get_register(bse, addr_size, CHECK_FLAG(flags, REX_B));
 
-	long offset = 0;
+	uint64_t offset = 0;
 	if (mod == 1) {
-		offset = stream[iter++];
-		offset = offset > 0x80 ? 0x100 - offset : offset;
+		offset = (signed char)stream[iter++];
+		//offset = offset > 0x80 ? 0x100 - offset : offset;
 	} else if (mod == 2) {
-		offset = *(uint16_t*)(stream+iter);
+		offset = *(int16_t*)(stream+iter);
 		iter += 2;
-		offset = offset > 0x8000 ? 0x10000 - offset : offset;
+		//offset = offset > 0x8000 ? 0x10000 - offset : offset;
 
 	} else if (mod == 0 && bse==5) {
-		offset = *(uint32_t*)(stream+iter);
+		offset = *(int32_t*)(stream+iter);
 		iter += 4;
-		offset = offset > 0x80000000 ? 0x100000000 - offset : offset;
+		//offset = offset > 0x80000000 ? 0x100000000 - offset : offset;
 	}
 	*operand = x86_indir_operand_tree(op_size, base, index, scale, offset);
 
@@ -266,14 +265,21 @@ struct operand_tree *x86_indir_operand_tree(int op_size, const char *base, const
 		operand_tree_add(indir, sop);
 		iter += snprintf(buf+iter, 32-iter, "*$%d", TREE_NCHILD(indir)-1);
 	}
+
+	/*Correct sign for offset*/
+	char sign = '+';
+	if (offset > 0x80000000) {
+		offset= -offset;
+		sign = '-';
+	}
 	if (offset != 0) {
 		oop = malloc(sizeof(struct operand_tree));
 		operand_addr(oop, offset);
 		operand_tree_add(indir, oop);
-		if (TREE_NCHILD(indir)==1)
+		if (TREE_NCHILD(indir)==1 && sign!='-')
 			iter += snprintf(buf+iter, 32-iter, "$%d", TREE_NCHILD(indir)-1);
 		else
-			iter += snprintf(buf+iter, 32-iter, "+$%d", TREE_NCHILD(indir)-1);
+			iter += snprintf(buf+iter, 32-iter, "%c$%d", sign, TREE_NCHILD(indir)-1);
 
 	}
 	iter += snprintf(buf+iter, 32-iter, "]");

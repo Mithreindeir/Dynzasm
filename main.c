@@ -12,16 +12,22 @@ int main()
 	x86_parse(root);
 
 	char ch;
-	char bbuf[64];
-	unsigned char out[64];
-	memset(bbuf, 0, 64);
-	memset(out, 0, 64);
+	long allocd=100;
+	char *bbuf = malloc(allocd);
 	int iter = 0;
 	while (read(STDIN_FILENO, &ch, 1) > 0) {
+		if ((iter + 1) >= allocd) {
+			allocd += 100;
+			bbuf = realloc(bbuf, allocd);
+			memset(bbuf+iter, 0, allocd-iter-1);
+		}
 		if ((ch>='a'&&ch<='f') || (ch >= 0x30 && ch <= 0x39)) {
 			bbuf[iter++]=ch;
 		}
 	}
+	int maxout = iter/2 + 1;
+	unsigned char *out = malloc(maxout);
+	memset(out, 0, maxout);
 	long max = ascii_to_hex(out, bbuf, iter);
 	long bit = 0;
 
@@ -49,6 +55,8 @@ int main()
 		printf("\n");
 	}
 
+	free(bbuf);
+	free(out);
 	trie_destroy(root);
 	return 0;
 }
