@@ -37,8 +37,14 @@ long x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 	if (n->flags == REG_EXT_FLAG) {
 		u8 sv = stream[iter];
 		//Zero out everything but the reg 3 bits
-		sv = (sv&0x38)>>3;
+		sv = (sv&0x38);
 		n = trie_lookup(n, &sv, 1);
+	}
+	/*Some x87 instructions use the mod field as an opcode extension*/
+	if (n->flags == MOD_EXT_FLAG) {
+		u8 sv = stream[iter]>>6;
+		if (sv == MODRM_REG)
+			n = trie_lookup(n, &sv,1);
 	}
 	/*If the instruction is not found, then die*/
 	if (!n || !n->value) {
@@ -52,12 +58,16 @@ long x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 	/*Set mnemonic*/
 	memcpy(disas->mnemonic, e->mnemonic, strlen(e->mnemonic));
 
+	/*Used First Byte*/
+	int ufb = iter;
 	/*Create operands based on addressing modes*/
 	for (int i = 0; i < e->num_op; i++) {
 		struct operand_tree *operand = NULL;
 		/*The reg operand in may need a byte previous in the stream, so pass in the first byte*/
-		if (e->operand[i][0]=='G'||e->operand[i][0]=='V'||e->operand[i][0]=='P') {
+		char fv = e->operand[i][0];
+		if (fv=='G'||fv=='V'||fv=='P'||fv=='B') {
 			(void)x86_decode_operand(&operand, e->operand[i], flags, operand_stream, operand_max);
+			ufb++;
 		} else {
 			iter += x86_decode_operand(&operand, e->operand[i], flags, stream+iter, max-iter);
 		}
@@ -68,6 +78,8 @@ long x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 		if (operand)
 			dis_add_operand(disas, operand);
 	}
+	if (ufb > iter) iter = ufb;
+
 	return iter;
 }
 
@@ -89,7 +101,10 @@ long x86_decode_operand(struct operand_tree **opt, char *operand, u8 flags, u8 *
 	} else {
 		/*Check if its a register*/
 		int ridx = get_register_index(operand);
-		if (ridx != -1) {
+		int xidx = get_xmm_index(operand);
+		int fidx = get_x87_index(operand);
+		int midx = get_mm_index(operand);
+		if (ridx != -1 || midx != -1 || fidx != -1 || xidx != -1) {
 			*opt = malloc(sizeof(struct operand_tree));
 			operand_reg(*opt, operand);
 		} else {
@@ -165,6 +180,18 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op
 			} else {
 				*operand = malloc(sizeof(struct operand_tree));
 				operand_reg(*operand,xmm_registers[(stream[iter++]&0x38)>>3]);
+			}
+			break;
+		case 'B':/*Reg field of modrm selects a x87 fpu stack register*/
+			*operand = malloc(sizeof(struct operand_tree));
+			operand_reg(*operand,x87_registers[(stream[0]&0x38)>>3]);
+			break;
+		case 'H':/*The modrm byte specifies either a x87 fpu stack register or memory address*/
+			if ((stream[0]>>6)!=MODRM_REG) {
+				iter += x86_decode_modrm(operand, op_size, addr_size, stream, max, flags);
+			} else {
+				*operand = malloc(sizeof(struct operand_tree));
+				operand_reg(*operand,x87_registers[(stream[iter++]&0x38)>>3]);
 			}
 			break;
 		case 'X': /*DS:RSI offset addressing mode*/

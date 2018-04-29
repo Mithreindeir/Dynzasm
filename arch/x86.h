@@ -14,6 +14,7 @@
 #define REG_EXT_FLAG 		2
 #define PREFIX_FLAG 		4
 #define OFFSET_FLAG 		8
+#define MOD_EXT_FLAG 		16
 
 /*Instruction Flags*/
 #define OPER_SIZE_OVERRIDE 	1 //01

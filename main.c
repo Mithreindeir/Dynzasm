@@ -35,13 +35,13 @@ int main()
 		struct dis disas;
 		int oldbit = bit;
 		bit+=x86_disassemble(root, out+bit, max-bit, &disas);
-		int w = 10;
-		for (int i = oldbit; i < bit; i++) {
-			printf("%02x ", out[i]);
-			w--;
+		int w = 15;
+		for (int i = oldbit; w>=2 && i < bit; i++) {
+			printf("%02x", out[i]);
+			w-=2;
 		}
 		while (w>0) {
-			printf("   ");
+			printf(" ");
 			w--;
 		}
 		char buf[256];

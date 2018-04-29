@@ -19,6 +19,11 @@ const char * general_registers[64] = {
 	"r15b", "r15w", "r15d", "r15"
 };
 
+const char * x87_registers[8] = {
+	"st0", "st1", "st1", "st3", "st4", "st5", "st6", "st7"
+};
+
+
 const char * xmm_registers[8] = {
 	"xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
 };
@@ -42,6 +47,30 @@ int get_register_index(const char *reg)
 {
 	for (int i = 0; i < (signed int)(sizeof(general_registers)/sizeof(char*)); i++) {
 		if (!strcmp(reg, general_registers[i])) return i;
+	}
+	return -1;
+}
+
+int get_x87_index(const char *reg)
+{
+	for (int i = 0; i < (signed int)(sizeof(x87_registers)/sizeof(char*)); i++) {
+		if (!strcmp(reg, x87_registers[i])) return i;
+	}
+	return -1;
+}
+
+int get_xmm_index(const char *reg)
+{
+	for (int i = 0; i < (signed int)(sizeof(xmm_registers)/sizeof(char*)); i++) {
+		if (!strcmp(reg, xmm_registers[i])) return i;
+	}
+	return -1;
+}
+
+int get_mm_index(const char *reg)
+{
+	for (int i = 0; i < (signed int)(sizeof(mm_registers)/sizeof(char*)); i++) {
+		if (!strcmp(reg, mm_registers[i])) return i;
 	}
 	return -1;
 }
