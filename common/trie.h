@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*Opaque Trie structure for disassembly indexing.
  * Branch Nodes can hold flags to resolve lookup conflicts.*/
@@ -30,5 +31,9 @@ void trie_destroy(struct trie_node *node);
 void trie_insert(struct trie_node *root, unsigned char *stream, long max, void *value, unsigned char flags);
 //Returns the leaf node or branch if there is a lookup conflict
 struct trie_node *trie_lookup(struct trie_node *root, unsigned char *stream, long max);
+//Insertion sort trie nodes
+void trie_node_insert(struct trie_node *node, struct trie_node *child);
+//Search on a sorted trie node
+struct trie_node *trie_node_search(struct trie_node *node, unsigned char key);
 
 #endif

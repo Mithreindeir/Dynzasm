@@ -40,9 +40,9 @@ int main()
 			printf("%02x ", out[i]);
 			w--;
 		}
-		while (w) {
+		while (w>0) {
 			printf("   ");
-			w-= 1;
+			w--;
 		}
 		char buf[256];
 		printf("%s\t", disas.mnemonic);

@@ -63,6 +63,7 @@ void operand_tree_add(struct operand_tree *node, struct operand_tree *child)
 
 void operand_reg(struct operand_tree *tree, const char *reg)
 {
+	if (!reg) return;
 	operand_tree_init(tree, DIS_OPER);
 	tree->body.operand.operand_type = DIS_REG;
 	long len = strlen(reg);

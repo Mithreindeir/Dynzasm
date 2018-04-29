@@ -7,9 +7,10 @@ long x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 	dis_init(disas);
 	/*Find instruction match in the trie*/
 	struct trie_node *n = trie_lookup(root, stream+iter, max-iter);
+	const char *offset = NULL;
 	iter+=n->dist;
 	u8 flags = 0;
-	while (n->flags == PREFIX_FLAG) {
+	while (n->flags & PREFIX_FLAG) {
 		char prefix = n->key;
 		if (prefix >= 0x40 && prefix <= 0x50) {
 			prefix = prefix & 0x0f;
@@ -21,6 +22,9 @@ long x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 				flags |= REX_R;
 			if (prefix & 0x8)
 				flags |= REX_W;
+		}
+		if (n->flags & OFFSET_FLAG && !offset) {
+			offset = n->value ? ((struct x86_instr_entry*)n->value)->mnemonic : NULL;
 		}
 		if (prefix == 0x66)
 			flags |= OPER_SIZE_OVERRIDE;
@@ -52,10 +56,14 @@ long x86_disassemble(struct trie_node *root, u8 *stream, long max, struct dis *d
 	for (int i = 0; i < e->num_op; i++) {
 		struct operand_tree *operand = NULL;
 		/*The reg operand in may need a byte previous in the stream, so pass in the first byte*/
-		if (e->operand[i][0]=='G') {
+		if (e->operand[i][0]=='G'||e->operand[i][0]=='V'||e->operand[i][0]=='P') {
 			(void)x86_decode_operand(&operand, e->operand[i], flags, operand_stream, operand_max);
 		} else {
 			iter += x86_decode_operand(&operand, e->operand[i], flags, stream+iter, max-iter);
+		}
+		/*If there is a segment offset, add it onto any modrm memory operand*/
+		if (e->operand[i][0]=='E' && offset) {
+			fmt_offset_str(operand, offset);
 		}
 		if (operand)
 			dis_add_operand(disas, operand);
@@ -105,9 +113,8 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op
 			break;
 		case 'G':; /*Register modrm encoding ->>> eax, <<-- dword [eax] */
 			u8 mrmreg = (stream[0] & 0x38) >> 3;
-			const char *reg = get_register(mrmreg, op_size, CHECK_FLAG(flags, REX_R));
 			*operand = malloc(sizeof(struct operand_tree));
-			operand_reg(*operand, reg);
+			operand_reg(*operand,get_register(mrmreg, op_size, CHECK_FLAG(flags, REX_R)));
 			break;
 		case 'I':; /*Immediate Value*/
 			uint64_t imm = 0;
@@ -132,10 +139,42 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op
 			iter += get_integer(&daddr, op_size, stream, max);
 			*operand = malloc(sizeof(struct operand_tree));
 			operand_addr(*operand, daddr);
-			 break;
+			break;
 		case 'M':; /*Memory addres. (modrm but with an operand size of 0*/
 			iter += x86_decode_modrm(operand, 0, addr_size, stream, max, flags);
-			 break;
+			break;
+		case 'P':
+			*operand = malloc(sizeof(struct operand_tree));
+			operand_reg(*operand,mm_registers[(stream[0]&0x38)>>3]);
+			break;
+		case 'Q':
+			if ((stream[0]>>6)!=MODRM_REG) {
+				iter += x86_decode_modrm(operand, op_size, addr_size, stream, max, flags);
+			} else {
+				*operand = malloc(sizeof(struct operand_tree));
+				operand_reg(*operand,mm_registers[(stream[iter++]&0x38)>>3]);
+			}
+			break;
+		case 'V': /*Selects XMM Register*/
+			*operand = malloc(sizeof(struct operand_tree));
+			operand_reg(*operand,xmm_registers[(stream[0]&0x38)>>3]);
+			break;
+		case 'W': /*Selects XMM Register or memory location*/
+			if ((stream[0]>>6)!=MODRM_REG) {
+				iter += x86_decode_modrm(operand, op_size, addr_size, stream, max, flags);
+			} else {
+				*operand = malloc(sizeof(struct operand_tree));
+				operand_reg(*operand,xmm_registers[(stream[iter++]&0x38)>>3]);
+			}
+			break;
+		case 'X': /*DS:RSI offset addressing mode*/
+			*operand=x86_indir_operand_tree(op_size,get_register(6,addr_size,0), NULL ,1, 0);
+			fmt_offset_str(*operand, "ds");
+			break;
+		case 'Y': /*ES:RDI Offset addressing mode*/
+			*operand=x86_indir_operand_tree(op_size, get_register(7,addr_size,0), NULL ,1, 0);
+			fmt_offset_str(*operand, "es");
+			break;
 	}
 	return iter;
 }
@@ -158,7 +197,8 @@ long x86_decode_modrm(struct operand_tree **operand, int op_size, int addr_size,
 	/*MODRM: EBP is invalid rm byte in indirect mode, so it means disp only*/
 	if (MODRM_DISPONLY(mod, rm)) {
 		if (max < 4) return iter;
-		*operand = x86_indir_operand_tree(op_size, "rip", NULL, 1, *(uint32_t*)stream);
+		*operand = x86_indir_operand_tree(op_size, "rip", NULL, 1, *(uint32_t*)(stream+iter));
+		iter += 4;
 		return iter;
 	}
 
@@ -172,7 +212,6 @@ long x86_decode_modrm(struct operand_tree **operand, int op_size, int addr_size,
 		case MODRM_1DISP:
 			reg = get_register(rm, addr_size, CHECK_FLAG(flags, REX_B));
 			uint64_t bdisp = (int64_t)(signed char)stream[iter++];
-			printf("%lx\n", bdisp);
 			*operand = x86_indir_operand_tree(op_size, reg, NULL, 1, (signed long)bdisp);
 			break;
 		case MODRM_4DISP:
@@ -211,17 +250,17 @@ long x86_decode_sib(struct operand_tree **operand, int op_size, int addr_size, u
 
 	uint64_t offset = 0;
 	if (mod == 1) {
+		if (!(max-iter)) return iter;
 		offset = (signed char)stream[iter++];
 		//offset = offset > 0x80 ? 0x100 - offset : offset;
 	} else if (mod == 2) {
-		offset = *(int16_t*)(stream+iter);
-		iter += 2;
-		//offset = offset > 0x8000 ? 0x10000 - offset : offset;
-
-	} else if (mod == 0 && bse==5) {
+		if ((max-iter) < 4) return iter;
 		offset = *(int32_t*)(stream+iter);
 		iter += 4;
-		//offset = offset > 0x80000000 ? 0x100000000 - offset : offset;
+	} else if (mod == 0 && bse==5) {
+		if ((max-iter) < 4) return iter;
+		offset = *(int32_t*)(stream+iter);
+		iter += 4;
 	}
 	*operand = x86_indir_operand_tree(op_size, base, index, scale, offset);
 
@@ -268,7 +307,7 @@ struct operand_tree *x86_indir_operand_tree(int op_size, const char *base, const
 
 	/*Correct sign for offset*/
 	char sign = '+';
-	if (offset > 0x80000000) {
+	if (offset > 0x80000000 && (bop||sop||iop)) {
 		offset= -offset;
 		sign = '-';
 	}
@@ -325,4 +364,21 @@ long get_integer(uint64_t *val, int size, u8 *stream, long max)
 		*val = stream[0];
 		return 1;
 	}
+}
+
+/*Inserts offset into a operand tree*/
+void fmt_offset_str(struct operand_tree *operand, const char *offset)
+{
+	if (!operand || operand->type != DIS_BRANCH) return;
+	char buf[64];
+	memset(buf, 0, 64);
+	char *format = TREE_FORMAT(operand);
+	int mlen = strlen(format);
+	memcpy(buf, format, mlen);
+	int off = 0;
+	while (buf[off] != '[' && off < mlen) off++;
+	int iter = 0;
+	iter+=snprintf(format, FMT_SIZE, "%*.*s", off, off, buf);
+	iter+=snprintf(format+iter, FMT_SIZE-iter, "%s:", offset);
+	iter+=snprintf(format+iter, FMT_SIZE-iter, "%s", buf+off);
 }

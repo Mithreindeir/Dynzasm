@@ -29,46 +29,76 @@ void trie_destroy(struct trie_node *node)
 
 struct trie_node *trie_lookup(struct trie_node *node, unsigned char *stream, long max)
 {
-	for (int i = 0; i < node->num_children; i++) {
-		if (node->children[i]->key == *stream) {
-			node = node->children[i];
-			if (!(--max)) return node;
-			stream++;
-			i = -1;
-		}
+	struct trie_node *far = node;
+	struct trie_node *tmp = NULL;
+	while (max > 0) {
+		tmp = trie_node_search(far, stream[0]);
+		if (!tmp) break;
+		far = tmp;
+		stream++;
+		max--;
 	}
-	return node;
+	return far;
 }
 
 void trie_insert(struct trie_node *root, unsigned char *stream, long max, void *value, unsigned char flags)
 {
 	struct trie_node *far = root;
+	struct trie_node *tmp = NULL;
 	while (max > 0) {
-		int found = 0;
-		for (int i = 0; i < far->num_children; i++) {
-			if (far->children[i]->key == stream[0]) {
-				found = 1;
-				far = far->children[i];
-				max--;
-				stream++;
-				break;
-			}
-		}
-		if (!found) break;
+		tmp = trie_node_search(far, stream[0]);
+		if (!tmp) break;
+		far = tmp;
+		stream++;
+		max--;
 	}
-
+	struct trie_node *child = NULL;
 	while (max > 0) {
-		far->num_children++;
-		if (!far->children)
-			far->children=malloc(sizeof(struct trie_node*));
-		else
-			far->children=realloc(far->children,sizeof(struct trie_node*)*far->num_children);
-		far->children[far->num_children-1] = trie_init(stream[0], NULL);
-		far->children[far->num_children-1]->dist = far->dist+1;
-		far = far->children[far->num_children-1];
+		child = trie_init(stream[0], NULL);
+		child->dist = far->dist + 1;
+		trie_node_insert(far, child);
+		far = child;
 		stream++;
 		max--;
 	}
 	far->value = value;
 	far->flags = flags;
+}
+
+struct trie_node *trie_node_search(struct trie_node *node, unsigned char key)
+{
+	long start = 0, end = node->num_children - 1;
+	long mid;
+	while (start <= end) {
+		mid = (end + start) / 2;
+		if (node->children[mid]->key > key) {
+			end = mid - 1;
+		} else if (node->children[mid]->key < key) {
+			start = mid + 1;
+		} else {
+			return node->children[mid];
+		}
+	}
+	return NULL;
+}
+
+void trie_node_insert(struct trie_node *node, struct trie_node *child)
+{
+	int idx = 0;
+	for (; idx < node->num_children; idx++) {
+		if (child->key < node->children[idx]->key)
+			break;
+	}
+	node->num_children++;
+	if (!node->children)
+		node->children=malloc(sizeof(struct trie_node*));
+	else
+		node->children=realloc(node->children,sizeof(struct trie_node*)*node->num_children);
+	if (node->num_children == 1 || idx==(node->num_children-1)) {
+		node->children[idx] = child;
+	} else {
+		long size = (node->num_children-(idx+1)) * sizeof(struct trie_node *);
+		memmove(node->children+idx+1,node->children+idx, size);
+		node->children[idx] = child;
+	}
 }

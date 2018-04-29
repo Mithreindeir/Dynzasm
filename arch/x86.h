@@ -13,6 +13,7 @@
 /*Trie Node Flags*/
 #define REG_EXT_FLAG 		2
 #define PREFIX_FLAG 		4
+#define OFFSET_FLAG 		8
 
 /*Instruction Flags*/
 #define OPER_SIZE_OVERRIDE 	1 //01
@@ -46,5 +47,6 @@ long x86_decode_sib(struct operand_tree **operand, int op_size, int addr_size, u
 long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op_size, int addr_size, u8 *stream, long max, u8 flags);
 struct operand_tree *x86_indir_operand_tree(int op_size, const char *base, const char *index, long scale, unsigned long offset);
 long get_integer(uint64_t * val, int size, u8 *stream, long max);
+void fmt_offset_str(struct operand_tree *operand, const char *offset);
 
 #endif
