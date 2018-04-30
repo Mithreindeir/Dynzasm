@@ -26,7 +26,7 @@ long ascii_to_hex(unsigned char *out, char *in, long len)
 
 void x86_parse(struct trie_node *root)
 {
-	FILE *fp = fopen("arch/x86.ins", "r");
+	FILE *fp = fopen("src/arch/x86/x86.ins", "r");
 	if (!fp) {
 		printf("Error opening x86 instruction file\n");
 		return;

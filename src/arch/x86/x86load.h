@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../common/trie.h"
+#include "../../common/trie.h"
 
 struct x86_instr_entry {
 	char mnemonic[12];

@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include "arch/x86.h"
-#include "arch/x86load.h"
+#include "arch/x86/x86.h"
+#include "arch/x86/x86load.h"
 #include "common/trie.h"
 
 void disassemble(struct trie_node *root, unsigned char *out, long max)

@@ -1,8 +1,8 @@
 #ifndef X86_H
 #define X86_H
 
-#include "../include/dis.h"
-#include "../common/trie.h"
+#include "../../dis.h"
+#include "../../common/trie.h"
 #include "x86strings.h"
 #include "x86load.h"
 #include <stdint.h>
