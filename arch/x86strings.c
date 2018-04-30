@@ -20,7 +20,7 @@ const char * general_registers[64] = {
 };
 
 const char * x87_registers[8] = {
-	"st0", "st1", "st1", "st3", "st4", "st5", "st6", "st7"
+	"st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7"
 };
 
 

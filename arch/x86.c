@@ -104,9 +104,13 @@ long x86_decode_operand(struct operand_tree **opt, char *operand, u8 flags, u8 *
 		int xidx = get_xmm_index(operand);
 		int fidx = get_x87_index(operand);
 		int midx = get_mm_index(operand);
-		if (ridx != -1 || midx != -1 || fidx != -1 || xidx != -1) {
+		if (midx != -1 || fidx != -1 || xidx != -1) {
 			*opt = malloc(sizeof(struct operand_tree));
 			operand_reg(*opt, operand);
+		} if (ridx != -1) {
+			int size = REG_SIZE_IDX(ridx);
+			*opt = malloc(sizeof(struct operand_tree));
+			operand_reg(*opt,get_register(REG_BIN_IDX(ridx), size, CHECK_FLAG(flags, REX_B)));
 		} else {
 			long val = strtol(operand, NULL, 0);
 			*opt = malloc(sizeof(struct operand_tree));
@@ -179,12 +183,12 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op
 				iter += x86_decode_modrm(operand, op_size, addr_size, stream, max, flags);
 			} else {
 				*operand = malloc(sizeof(struct operand_tree));
-				operand_reg(*operand,xmm_registers[(stream[iter++]&0x38)>>3]);
+				operand_reg(*operand,xmm_registers[(stream[iter++]&0x7)]);
 			}
 			break;
 		case 'B':/*Reg field of modrm selects a x87 fpu stack register*/
 			*operand = malloc(sizeof(struct operand_tree));
-			operand_reg(*operand,x87_registers[(stream[0]&0x38)>>3]);
+			operand_reg(*operand,x87_registers[(stream[0]&0x7)]);
 			break;
 		case 'H':/*The modrm byte specifies either a x87 fpu stack register or memory address*/
 			if ((stream[0]>>6)!=MODRM_REG) {

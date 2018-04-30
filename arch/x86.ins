@@ -288,9 +288,54 @@ d5 invalid
 d6 invalid
 d7 xlat
 d8 invalid f:2
-d9
-da fiadd M f:16
-da03 fcmovb B
+d800 fadd M f:16
+d80003 fadd B
+d808 fmul M f:16
+d80803 fmul B
+d810 fcom B
+d8d1 fcom st1
+d818 fcomp B
+d8d9 fcomp st1
+d820 fsub M f:16
+d82003 fsub B
+d828 fsubr M f:16
+d82803 fsubr B
+d830 fdiv M f:16
+d83003 fdiv B
+d838 fdivr M f:16
+d83803 fdivr B f:16
+d9 invalid f:2
+d900 fld B
+d908 fxch B
+d9c9 fxch st1
+d910 fst M
+d9d0 fnop
+d918 fstp M
+d91803 fstp1 B
+d920  fldenv M
+d9e0 fchs
+d9e1 fabs
+d9e4 ftst
+d9e5 fxam
+d928 fldcw M
+d9e8 fld1
+d9e9 fld2t
+d9ea fldl2e
+
+da invalid f:2
+da00 fiadd M f:16
+da0003 fcmovb B
+da08 fimul M f:16
+da0803 fcmove B
+da10 ficom M f:16
+da1003 fcmovbe B
+da18 ficomp M f:16
+da1803 fcmovu B
+da20 fisub M
+da28 fisubr M
+dae8 fucompp st1
+da30 fidiv M
+da38 fidivr M
 db
 dc invalid f:2
 dc00 fadd M f:16

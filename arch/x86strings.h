@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define REG_BIN_IDX(idx) (idx / 4)
+#define REG_SIZE_IDX(idx) (idx % 4 + 1)
 
 /*X86 General Registers*/
 extern const char * general_registers[64];
