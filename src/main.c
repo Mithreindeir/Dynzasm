@@ -82,7 +82,7 @@ int main(int argc, char ** argv)
 				rewind(fp);
 				unsigned char *buffer = malloc(size+1);
 				memset(buffer, 0, size);
-				if (!fread(buffer, size, 1, fp)) {
+				if (fread(buffer, 1, size, fp) != (unsigned long)size) {
 					printf("Error reading bytes from file\n");
 					exit(1);
 				}
