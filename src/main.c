@@ -5,6 +5,7 @@
 #include "arch/x86/x86.h"
 #include "arch/x86/x86load.h"
 #include "common/trie.h"
+#include "common/db.h"
 
 void disassemble(struct trie_node *root, unsigned char *out, long max)
 {
@@ -67,6 +68,27 @@ void disas_stdin(struct trie_node *root)
 
 int main(int argc, char ** argv)
 {
+	struct db_node *rdb = db_node_init(NULL);
+
+	rdb = db_insert(rdb, 0x1);
+	db_node_print(rdb, 0);
+	rdb = db_insert(rdb, 0x2);
+	db_node_print(rdb, 0);
+	rdb = db_insert(rdb, 0x3);
+	db_node_print(rdb, 0);
+	rdb = db_insert(rdb, 0x0);
+	db_node_print(rdb, 0);
+	rdb = db_insert(rdb, 0x4);
+	db_node_print(rdb, 0);
+	rdb = db_insert(rdb, 0x5);
+	db_node_print(rdb, 0);
+	rdb = db_insert(rdb, 0x7);
+	db_node_print(rdb, 0);
+	rdb = db_insert(rdb, 0x6);
+
+	db_node_print(rdb, 0);
+	db_node_destroy(rdb);
+	return 0;
 	struct trie_node *root = trie_init(0, NULL);
 	x86_parse(root);
 

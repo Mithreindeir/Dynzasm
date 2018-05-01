@@ -1,132 +1,223 @@
 #include "db.h"
 
-struct zdb_node *zdb_node_init(struct zdb_node *parent)
+struct db_node *db_node_init(struct db_node *parent)
 {
-	struct zdb_node *node = malloc(sizeof(struct zdb_node));
+	struct db_node *node = malloc(sizeof(struct db_node));
 
-	node->num_elem = 0, node->num_children = 0;
-	node->elem = NULL, node->child = NULL;
+	node->keys = NULL, node->child = NULL;
+	node->num_keys = 0, node->num_child = 0;
+	node->leaf = 1;
 	node->parent = parent;
 
 	return node;
 }
 
-void zdb_node_destroy(struct zdb_node *zdb)
+void db_node_destroy(struct db_node *node)
 {
-	if (!zdb) return;
+	if (!node) return;
 
-	for (int i = 0; i < zdb->num_children; i++)
-			zdb_node_destroy(zdb->child[i]);
-
-	free(zdb->child);
-	free(zdb->elem);
-	free(zdb);
-}
-
-/*Tree Lookup*/
-struct zdb_node *zdb_lookup(struct zdb_node *root, unsigned long key)
-{
-	if (!root->num_children || root->num_children < root->num_elem)
-		return root;
-	for (int i = 0; i < root->num_elem; i++) {
-		if (key < root->elem[i]->key)
-			return zdb_lookup(root->child[i], key);
+	for (int i = 0; i < node->num_child; i++) {
+		db_node_destroy(node->child[i]);
 	}
-	return zdb_lookup(root->child[root->num_elem], key);
+	free(node->child);
+	free(node->keys);
+	free(node);
 }
 
-/*B+ Tree insertion. Returns new root or old root*/
-struct zdb_node *zdb_insert(struct zdb_node *root, struct zdb_keypair *kp)
+void db_node_print(struct db_node *root, int indent)
 {
-	if (root->num_elem < K_SIZE) {
-		zdb_addpair(root, kp);
-	} else {
-		struct zdb_node *oldroot = root;
-		int median = root->num_elem / 2;
-		zdb_splitchild(root, median);
-		root = zdb_node_init(oldroot->parent);
-
+	if (!root) return;
+	for (int i = 0; i < indent; i++)
+		printf("\t");
+	for (int i = 0; i < root->num_keys; i++) {
+		printf("%lx, ", root->keys[i]);
 	}
-	return root;
+	printf("\n");
+	for (int i = 0; i < root->num_child; i++) {
+		db_node_print(root->child[i], indent+1);
+		printf("\n");
+	}
 }
 
-/*Splits a nodes child into 2 children */
-void zdb_splitchild(struct zdb_node *parent, int cidx)
-{
-	if (!parent || cidx < 0 || cidx >= parent->num_elem)
-		return;
-	struct zdb_node *left = zdb_node_init(parent);
-	struct zdb_node *right= zdb_node_init(parent);
 
-	/*Add all children with keys less than median to left node and the reset to right*/
-	unsigned char mkey = parent->elem[cidx]->key;
-	for (int i = 0; i < parent->num_elem; i++) {
-		if (parent->elem[i]->key < mkey) {
-			zdb_addpair(left, parent->elem[i]);
-			for (int j = 0; j < (i+1); j++) {
-				zdb_addchild(left, parent->child[j]);
-			}
-		} else if (parent->elem[i]->key > mkey) {
-			zdb_addpair(right, parent->elem[i]);
-			for (int j = 0; j < (i+1); j++) {
-				zdb_addchild(right, parent->child[j]);
-			}
-		} else {
-			continue;
+struct db_node *db_lookup(struct db_node *root, unsigned long key)
+{
+	if (!root) return NULL;
+	struct db_node *node = root;
+	int found = 0;
+	while (node && !node->leaf) {
+		found = 0;
+		for (int i = 0; i < node->num_keys; i++) {
+			if (key < node->keys[i]) {
+				node = node->child[i];
+				found = 1;
+				break;
+			} else if (key == node->keys[i])
+				return node;
 		}
-		/*Remove all used elements and chidren from the parent*/
-		zdb_rempair(parent, i);
-		for (int j = 0; j < (i+1); j++)
-			zdb_remchild(parent, j);
+		if (!found)
+			node = node->child[node->num_child-1];
 	}
-	zdb_addchild(parent, left);
-	zdb_addchild(parent, right);
+	return node;
 }
 
-/*Insertion sort of keypair into node*/
-void zdb_addpair(struct zdb_node *node, struct zdb_keypair *kp)
+struct db_node *db_insert(struct db_node *root, unsigned long key)
+{
+	struct db_node * closest = db_lookup(root, key);
+	struct db_node *nroot = root;
+	if (closest)
+		nroot = db_insert_internal(closest, key);
+	return !nroot->parent ? nroot : root;
+}
+
+struct db_node *db_insert_internal(struct db_node *closest, unsigned long key)
+{
+	if (closest->num_keys < MAX_KEYS) {
+		db_addkey(closest, key);
+		return closest;
+	} else if (closest->parent && closest->parent->num_keys < MAX_KEYS) {
+		db_addkey(closest, key);
+		struct db_node *left = db_node_init(NULL);
+		struct db_node *right = db_node_init(NULL);
+		struct db_node *parent = closest->parent;
+		db_remchild(parent, closest);
+		key = db_node_split(closest, left, right);
+		db_insert_internal(parent, key);
+		int idx = -1;
+		for (int i = 0; i < parent->num_keys; i++) {
+			if (parent->keys[i] == key)
+				idx = i;
+		}
+		if (idx >= 0) {
+				db_addchild(parent, left, idx);
+				db_addchild(parent, right, idx+1);
+		} else printf("fail2\n");
+		return parent;
+	} else if (!closest->parent) {
+		db_addkey(closest, key);
+		struct db_node *left = db_node_init(NULL);
+		struct db_node *right = db_node_init(NULL);
+		key = db_node_split(closest, left, right);
+		struct db_node *newroot = db_node_init(NULL);
+		db_addkey(newroot, key);
+		db_addchild(newroot, left, 0);
+		db_addchild(newroot, right, 1);
+		return newroot;
+	} else {
+		db_addkey(closest, key);
+		struct db_node *left = db_node_init(NULL);
+		struct db_node *right = db_node_init(NULL);
+		struct db_node *parent = closest->parent;
+		db_remchild(parent, closest);
+		key = db_node_split(closest, left, right);
+		parent = db_insert_internal(parent, key);
+		struct db_node *lk = db_lookup(parent, key);
+		struct db_node * ret=parent;
+		parent = lk;
+		int idx = -1;
+		for (int i = 0; i < parent->num_keys; i++) {
+			if (parent->keys[i] == key)
+				idx = i;
+		}
+		if (idx >= 0) {
+				db_addchild(parent, left, idx);
+				db_addchild(parent, right, idx+1);
+		}
+		return ret;
+	}
+	return closest;
+}
+
+unsigned long db_node_split(struct db_node *node, struct db_node *left, struct db_node *right)
+{
+	int median = node->num_keys/2;
+	int high = node->num_keys;
+	unsigned long * okeys = node->keys;
+	unsigned long mkey = okeys[median];
+	struct db_node ** ochild = node->child;
+	int nochild = node->num_child;
+
+	int wasleaf = node->leaf;
+	node->child = NULL;
+	node->num_child = 0;
+	node->keys = NULL;
+	node->num_keys = 0;
+	db_node_destroy(node);
+
+	for (int i = 0; i < high; i++) {
+		if (i > median)
+			db_addkey(right, okeys[i]);
+		else if (i < median)
+			db_addkey(left, okeys[i]);
+	}
+	if (wasleaf)
+		db_addkey(right, okeys[median]);
+	for (int i = 0; i < nochild; i++) {
+		if (i > median)
+			db_addchild(right, ochild[i], right->num_child);
+		else if (i <= median)
+			db_addchild(left, ochild[i], left->num_child);
+	}
+
+	free(okeys);
+	free(ochild);
+
+	return mkey;
+}
+
+void db_addchild(struct db_node *node, struct db_node *child, int cidx)
+{
+	if (cidx > node->num_child)
+		return;
+	node->leaf = 0;
+	child->parent = node;
+	node->num_child++;
+	if (!node->child)
+		node->child=malloc(sizeof(struct db_node*));
+	else
+		node->child=realloc(node->child, sizeof(struct db_node*)*node->num_child);
+	int size = (node->num_child - (cidx+1))*sizeof(struct db_node*);
+	if (cidx < (node->num_child-1))
+		memmove(node->child+cidx+1, node->child+cidx, size);
+	node->child[cidx] = child;
+}
+
+void db_remchild(struct db_node *node, struct db_node *child)
+{
+	if (!node) return;
+	int idx = -1;
+	for (int i = 0; i < node->num_child; i++) {
+		if (node->child[i] == child) {
+			idx = i;
+			break;
+		}
+	}
+	if (idx < 0) return;
+	int size = ((node->num_child-1)-idx) * sizeof(struct db_node*);
+	if (idx < node->num_child)
+		memmove(node->child+idx,node->child+idx+1, size);
+	node->num_child--;
+	if (!node->num_child) {
+		node->leaf = 1;
+		free(node->child);
+		node->child = NULL;
+	} else {
+		node->child = realloc(node->child, sizeof(struct db_node*)*node->num_child);
+	}
+}
+
+void db_addkey(struct db_node *node, unsigned long key)
 {
 	int idx = 0;
-	while ((idx < node->num_elem) && (kp->key >= node->elem[idx]->key)) idx++;
-
-	node->num_elem++;
-	if (!node->elem)
-		node->elem = malloc(sizeof(struct zdb_keypair*));
+	while ((idx < node->num_keys) && (key > node->keys[idx])) idx++;
+	if (idx < node->num_keys && node->keys[idx] == key) return;
+	node->num_keys++;
+	if (!node->keys)
+		node->keys=malloc(sizeof(unsigned long));
 	else
-		node->elem = realloc(node->elem, sizeof(struct zdb_keypair*)*node->num_elem);
-
-	int size = (node->num_elem-(idx+1))*sizeof(struct zdb_keypair*);
-	if (idx > 1 && idx < (node->num_elem-1)) {
-		memmove(node->elem+idx+1, node->elem+idx, size);
-	}
-	node->elem[idx] = kp;
-}
-
-void zdb_rempair(struct zdb_node *node, int idx) {
-	if (!node || (idx < 0 || idx >= node->num_elem))
-			return;
-	node->num_elem--;
-	node->elem = realloc(node->elem, sizeof(struct zdb_keypair*)*node->num_elem);
-	int size = (node->num_elem-idx) * sizeof(struct zdb_keypair*);
-	memmove(node->elem+idx,node->elem+idx+1, size);
-}
-
-void zdb_addchild(struct zdb_node *node, struct zdb_node *child)
-{
-	node->num_children++;
-	if (!node->child)
-		node->child = malloc(sizeof(struct zdb_node*));
-	else
-		node->child = realloc(node->child, sizeof(struct zdb_node*)*node->num_children);
-	node->child[node->num_children-1] = child;
-}
-
-void zdb_remchild(struct zdb_node *node, int cidx)
-{
-	if (!node || (cidx < 0 || cidx >= node->num_children))
-			return;
-	node->num_children--;
-	node->child = realloc(node->child, sizeof(struct zdb_node*)*node->num_children);
-	int size = (node->num_children-cidx) * sizeof(struct zdb_node*);
-	memmove(node->child+cidx,node->child+cidx+1, size);
+		node->keys=realloc(node->keys, sizeof(unsigned long)*node->num_keys);
+	int size = (node->num_keys - (idx+1))*sizeof(unsigned long);
+	if (idx < (node->num_keys-1))
+		memmove(node->keys+idx+1, node->keys+idx, size);
+	node->keys[idx] = key;
 }

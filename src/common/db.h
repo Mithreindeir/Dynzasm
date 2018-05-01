@@ -5,37 +5,38 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*String Database
- * B+ Tree*/
+#define DB_RECORD
+#define DB_LEAF 2
+#define DB_BRANCH 1
 
-#define K_SIZE 3
+#define KVAL 3
+#define MAX_CHILD (KVAL+1)
+#define MAX_KEYS (KVAL)
 
-struct zdb_node {
-	struct zdb_node **child;
-	int num_children;
+/*B+ Tree database*/
 
-	struct zdb_keypair ** elem;
-	int num_elem;
+struct db_node {
+	unsigned long * keys;
+	int num_keys;
 
-	struct zdb_node *parent;
+	struct db_node **child;
+	int num_child;
+	int leaf;
+	struct db_node *parent;
 };
 
-struct zdb_keypair {
-	unsigned char key;
-	void *value;
-};
+struct db_node *db_node_init(struct db_node *parent);
+void db_node_destroy(struct db_node *node);
 
-struct zdb_node *zdb_node_init();
-void zdb_node_destroy(struct zdb_node *zdb);
+void db_node_print(struct db_node *root, int indent);
 
-struct zdb_node *zdb_insert(struct zdb_node *root, struct zdb_keypair *kp);
+struct db_node *db_lookup(struct db_node *root, unsigned long key);
+struct db_node *db_insert(struct db_node *root, unsigned long key);
+struct db_node *db_insert_internal(struct db_node *root, unsigned long key);
 
-void zdb_splitchild(struct zdb_node *parent, int cidx);
-void zdb_addchild(struct zdb_node *parent, struct zdb_node *child);
-void zdb_addpair(struct zdb_node *node, struct zdb_keypair *kp);
-void zdb_remchild(struct zdb_node *parent, int cidx);
-void zdb_rempair(struct zdb_node *parent, int idx);
-void zdb_delete(struct zdb_node *root, struct zdb_node *onode);
-
+unsigned long db_node_split(struct db_node *node, struct db_node *left, struct db_node *right);
+void db_addchild(struct db_node *node, struct db_node *child, int cidx);
+void db_addkey(struct db_node *node, unsigned long key);
+void db_remchild(struct db_node *node, struct db_node *child);
 
 #endif
