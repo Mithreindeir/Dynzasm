@@ -6,9 +6,13 @@
 #include <string.h>
 #include "../../common/trie.h"
 
+#define MAX_MNEM_SIZE 12
+#define MAX_OPER_LEN 12
+#define MAX_OPERANDS 3
+
 struct x86_instr_entry {
-	char mnemonic[12];
-	char operand[3][12];
+	char mnemonic[MAX_MNEM_SIZE];
+	char operand[MAX_OPERANDS][MAX_OPER_LEN];
 	int num_op;
 };
 

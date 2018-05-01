@@ -19,6 +19,9 @@ void db_node_destroy(struct db_node *node)
 	for (int i = 0; i < node->num_child; i++) {
 		db_node_destroy(node->child[i]);
 	}
+	for (int i = 0; i < node->num_keys; i++) {
+		free(node->keys[i]);
+	}
 	free(node->child);
 	free(node->keys);
 	free(node);
@@ -30,7 +33,7 @@ void db_node_print(struct db_node *root, int indent)
 	for (int i = 0; i < indent; i++)
 		printf("\t");
 	for (int i = 0; i < root->num_keys; i++) {
-		printf("%lx, ", root->keys[i]);
+		printf("%s, ", root->keys[i]);
 	}
 	printf("\n");
 	for (int i = 0; i < root->num_child; i++) {
@@ -40,7 +43,7 @@ void db_node_print(struct db_node *root, int indent)
 }
 
 
-struct db_node *db_lookup(struct db_node *root, unsigned long key)
+struct db_node *db_lookup(struct db_node *root, char * key)
 {
 	if (!root) return NULL;
 	struct db_node *node = root;
@@ -48,11 +51,11 @@ struct db_node *db_lookup(struct db_node *root, unsigned long key)
 	while (node && !node->leaf) {
 		found = 0;
 		for (int i = 0; i < node->num_keys; i++) {
-			if (key < node->keys[i]) {
+			if (strcmp(key, node->keys[i]) < 0) {
 				node = node->child[i];
 				found = 1;
 				break;
-			} else if (key == node->keys[i])
+			} else if (!strcmp(key, node->keys[i]))
 				return node;
 		}
 		if (!found)
@@ -61,16 +64,16 @@ struct db_node *db_lookup(struct db_node *root, unsigned long key)
 	return node;
 }
 
-struct db_node *db_insert(struct db_node *root, unsigned long key)
+struct db_node *db_insert(struct db_node *root, char * key)
 {
 	struct db_node * closest = db_lookup(root, key);
 	struct db_node *nroot = root;
 	if (closest)
-		nroot = db_insert_internal(closest, key);
+		nroot = db_insert_internal(closest, strdup(key));
 	return !nroot->parent ? nroot : root;
 }
 
-struct db_node *db_insert_internal(struct db_node *closest, unsigned long key)
+struct db_node *db_insert_internal(struct db_node *closest, char * key)
 {
 	if (closest->num_keys < MAX_KEYS) {
 		db_addkey(closest, key);
@@ -85,7 +88,7 @@ struct db_node *db_insert_internal(struct db_node *closest, unsigned long key)
 		db_insert_internal(parent, key);
 		int idx = -1;
 		for (int i = 0; i < parent->num_keys; i++) {
-			if (parent->keys[i] == key)
+			if (!strcmp(parent->keys[i], key))
 				idx = i;
 		}
 		if (idx >= 0) {
@@ -116,7 +119,7 @@ struct db_node *db_insert_internal(struct db_node *closest, unsigned long key)
 		parent = lk;
 		int idx = -1;
 		for (int i = 0; i < parent->num_keys; i++) {
-			if (parent->keys[i] == key)
+			if (!strcmp(parent->keys[i], key))
 				idx = i;
 		}
 		if (idx >= 0) {
@@ -128,12 +131,12 @@ struct db_node *db_insert_internal(struct db_node *closest, unsigned long key)
 	return closest;
 }
 
-unsigned long db_node_split(struct db_node *node, struct db_node *left, struct db_node *right)
+char * db_node_split(struct db_node *node, struct db_node *left, struct db_node *right)
 {
 	int median = node->num_keys/2;
 	int high = node->num_keys;
-	unsigned long * okeys = node->keys;
-	unsigned long mkey = okeys[median];
+	char * * okeys = node->keys;
+	char * mkey = okeys[median];
 	struct db_node ** ochild = node->child;
 	int nochild = node->num_child;
 
@@ -151,7 +154,7 @@ unsigned long db_node_split(struct db_node *node, struct db_node *left, struct d
 			db_addkey(left, okeys[i]);
 	}
 	if (wasleaf)
-		db_addkey(right, okeys[median]);
+		db_addkey(right, strdup(okeys[median]));
 	for (int i = 0; i < nochild; i++) {
 		if (i > median)
 			db_addchild(right, ochild[i], right->num_child);
@@ -206,18 +209,27 @@ void db_remchild(struct db_node *node, struct db_node *child)
 	}
 }
 
-void db_addkey(struct db_node *node, unsigned long key)
+void db_addkey(struct db_node *node, char * key)
 {
 	int idx = 0;
-	while ((idx < node->num_keys) && (key > node->keys[idx])) idx++;
+	while ((idx < node->num_keys) && (strcmp(key,node->keys[idx]) > 0)) idx++;
 	if (idx < node->num_keys && node->keys[idx] == key) return;
 	node->num_keys++;
 	if (!node->keys)
-		node->keys=malloc(sizeof(unsigned long));
+		node->keys=malloc(sizeof(char *));
 	else
-		node->keys=realloc(node->keys, sizeof(unsigned long)*node->num_keys);
-	int size = (node->num_keys - (idx+1))*sizeof(unsigned long);
+		node->keys=realloc(node->keys, sizeof(char *)*node->num_keys);
+	int size = (node->num_keys - (idx+1))*sizeof(char *);
 	if (idx < (node->num_keys-1))
 		memmove(node->keys+idx+1, node->keys+idx, size);
 	node->keys[idx] = key;
+}
+
+char *strdup(char *str)
+{
+	int len = strlen(str);
+	char *cpy = malloc(len+1);
+	strncpy(cpy, str, len);
+	cpy[len] = 0;
+	return cpy;
 }

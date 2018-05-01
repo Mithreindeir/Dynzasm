@@ -68,27 +68,6 @@ void disas_stdin(struct trie_node *root)
 
 int main(int argc, char ** argv)
 {
-	struct db_node *rdb = db_node_init(NULL);
-
-	rdb = db_insert(rdb, 0x1);
-	db_node_print(rdb, 0);
-	rdb = db_insert(rdb, 0x2);
-	db_node_print(rdb, 0);
-	rdb = db_insert(rdb, 0x3);
-	db_node_print(rdb, 0);
-	rdb = db_insert(rdb, 0x0);
-	db_node_print(rdb, 0);
-	rdb = db_insert(rdb, 0x4);
-	db_node_print(rdb, 0);
-	rdb = db_insert(rdb, 0x5);
-	db_node_print(rdb, 0);
-	rdb = db_insert(rdb, 0x7);
-	db_node_print(rdb, 0);
-	rdb = db_insert(rdb, 0x6);
-
-	db_node_print(rdb, 0);
-	db_node_destroy(rdb);
-	return 0;
 	struct trie_node *root = trie_init(0, NULL);
 	x86_parse(root);
 
@@ -99,12 +78,20 @@ int main(int argc, char ** argv)
 		if (fp) {
 			fseek(fp, 0, SEEK_END);
 			long size = ftell(fp);
-			rewind(fp);
-			unsigned char *buffer = malloc(size+1);
-			memset(buffer, 0, size);
-			fread(buffer, size, 1, fp);
-			disassemble(root, buffer, size);
-			free(buffer);
+			if (size > 0) {
+				rewind(fp);
+				unsigned char *buffer = malloc(size+1);
+				memset(buffer, 0, size);
+				if (!fread(buffer, size, 1, fp)) {
+					printf("Error reading bytes from file\n");
+					exit(1);
+				}
+				disassemble(root, buffer, size);
+				free(buffer);
+			} else {
+				printf("Error ftell returns negative number\n");
+				exit(1);
+			}
 		}
 	}
 	trie_destroy(root);

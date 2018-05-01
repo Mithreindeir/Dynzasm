@@ -68,7 +68,7 @@ void operand_reg(struct operand_tree *tree, const char *reg)
 	tree->body.operand.operand_type = DIS_REG;
 	long len = strlen(reg);
 	len = len >= REG_SIZE ? (REG_SIZE-2) : len;
-	memcpy(TREE_REG(tree), reg, len>=REG_SIZE?(REG_SIZE-1):len);
+	memcpy(TREE_REG(tree), reg, len);
 	TREE_REG(tree)[len] = 0;
 }
 

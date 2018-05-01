@@ -7,7 +7,7 @@ int get_line(FILE *f, char *buf, long max)
 	char c;
 	int iter = 0;
 	int eof = 0;
-	while ((c=fgetc(f)) != '\n' && !(eof=feof(f)))
+	while ((c=(char)fgetc(f)) != '\n' && !(eof=feof(f)))
 		buf[iter++] = c;
 	return eof;
 }
@@ -57,9 +57,10 @@ void x86_parse(struct trie_node *root)
 
 		/*Construct instruction entry from the lines strings*/
 		struct x86_instr_entry *entry = malloc(sizeof(struct x86_instr_entry));
-		strcpy(entry->mnemonic, mnem);
-		for (int i = 0; i < num_op; i++)
-			strcpy(entry->operand[i], op[i]);
+		strncpy(entry->mnemonic, mnem, MAX_MNEM_SIZE-1);
+		for (int i = 0; i < num_op; i++) {
+			strncpy(entry->operand[i], op[i], MAX_OPER_LEN-1);
+		}
 		entry->num_op = num_op;
 
 		/*Convert the key string to raw bytes and insert into trie*/
