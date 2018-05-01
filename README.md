@@ -1,4 +1,7 @@
 # Dynzasm
+
+[![Build Status](https://travis-ci.org/Mithreindeir/Dynzasm.svg?branch=master)](https://travis-ci.org/Mithreindeir/Dynzasm)
+
 Interactive Disassembly Library.
 
 Instruction represented are trees that can be "squashed" into strings
