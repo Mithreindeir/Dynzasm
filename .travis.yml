@@ -1,4 +1,22 @@
 language: c
 os: linux
 compiler: gcc
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "jwvKlKvxoB6CQiLwEKSPSl9iNMoQj/xamWQ3NLkhVusB9qN8I/Dq9bfALM/oVkmvXAiRb29SY8hENjTunDbL+wI/3K8bHP62sHPWddFfUp3a+S4ICmgjN5vpvyhC1a6KDUsIAs4B6NJpaB3++CV5SFPApeExepO7arz5NEuSOpPVfS8uiIu3UE8PNVTXDBpZt9oCDQzTL2HKjmJM3UMxOw33ycO+tMMI6UniHWxGH4H3AaG7dIt199AN2LWXxrUbRwhD59x6Y3pF3E+5fcVdFReBlCOL/ByV87LsH4YW0EkKYll0bPgcOQuDI11jX13forL3YiUqZ/RpE0tyAvIZoCYCA+LyTkGelJ/s913FXjl+gvSIJurYVSPfJi8KiYF994m8t5THRr+/RqrKRbCKuZ92TCYtasuoDBP0l3fY65pwBiUR87QrrRflBYrmjNX4G0S5ssOlu1/k3WZmoxYB+waWEBLlNC+dMp8uNJs2fj/KHP5+zy+aYE3Q9OyNb7xHasPL+EsuSwfte93IaXCdXXEaj/ekYwDopTcYz7cU5+oilNhi2T7uSVqdezFxpwBMkR6CLSC9cx3AMrMWJJU5Lm0Hy7Xfp5FWFVBuiodRCDkxn5vdhRlegB/sPT0TOARDg724CLpBIdMhGsq5VTjsLPl7vnU6P4JTARLnFrRai0s="
+
+before_install:
+  - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+
+addons:
+  coverity_scan:
+    project:
+      name: "Mithreindeir/Dynzasm"
+      description: "Interactive Disassembler"
+    notification_email: mithreindeir@gmail.com
+    build_command_prepend: ""
+    build_command: "make"
+    branch_pattern: coverity_scan
 script: make
