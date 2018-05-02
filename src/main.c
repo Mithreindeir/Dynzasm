@@ -68,6 +68,20 @@ void disas_stdin(struct trie_node *root)
 
 int main(int argc, char ** argv)
 {
+	struct db_node *rdb = db_node_init(NULL);
+	struct db_key k1;
+	//char buf[6];
+	for (int i = 0; i < 16; i++) {
+		//snprintf(buf, 6, "%c%c%c", 'a'+i, 'b'+i, 'c'+i);
+		//snprintf(buf, 6, "%d", i);
+		k1.key = &i;
+		k1.ksize = sizeof(int);
+		rdb = db_insert(rdb, k1);
+	}
+
+	db_node_print(rdb, 0);
+	db_node_destroy(rdb);
+	return 0;
 	struct trie_node *root = trie_init(0, NULL);
 	x86_parse(root);
 
