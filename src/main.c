@@ -70,15 +70,33 @@ int main(int argc, char ** argv)
 {
 	struct db_node *rdb = db_node_init(NULL);
 	struct db_key k1;
-	//char buf[6];
-	for (int i = 0; i < 16; i++) {
-		//snprintf(buf, 6, "%c%c%c", 'a'+i, 'b'+i, 'c'+i);
-		//snprintf(buf, 6, "%d", i);
+	char buf[64];
+	char buf2[64];
+	for (int i = 0; i < 10; i++) {
+		snprintf(buf2, 6, "%c%c%c", 'a'+i, 'b'+i, 'c'+i);
+		snprintf(buf, 64, "key%d", i);
+		//snprintf(buf2, 64, "val%d", i);
 		k1.key = &i;
 		k1.ksize = sizeof(int);
+		size_t b2 = strlen(buf2);
+		char *str = malloc(b2+1);
+		memcpy(str, buf2, b2);
+		str[b2] = 0;
+		k1.ptr = str;
 		rdb = db_insert(rdb, k1);
 	}
+	db_node_print(rdb, 0);
 
+	struct db_key k;
+	for (int i = 0 ; i < 10; i+=2) {
+		//snprintf(buf, 64, "key%d", 4);
+		k.key = &i;
+		k.ksize = sizeof(int);
+		k.ptr = NULL;
+		rdb = db_delete(rdb, k);
+		//char * str = db_lookup_value(rdb, k);
+		//printf("%s\n", str);
+	}
 	db_node_print(rdb, 0);
 	db_node_destroy(rdb);
 	return 0;

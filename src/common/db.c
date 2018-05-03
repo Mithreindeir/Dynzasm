@@ -4,10 +4,10 @@ struct db_node *db_node_init(struct db_node *parent)
 {
 	struct db_node *node = malloc(sizeof(struct db_node));
 
-	node->keys = NULL, node->child = NULL;
-	node->num_keys = 0, node->num_child = 0;
 	node->leaf = 1;
 	node->parent = parent;
+	node->keys = NULL, node->child = NULL;
+	node->num_keys = 0, node->num_child = 0;
 
 	return node;
 }
@@ -19,6 +19,10 @@ void db_node_destroy(struct db_node *node)
 	for (int i = 0; i < node->num_child; i++) {
 		db_node_destroy(node->child[i]);
 	}
+	for (int i = 0; i < node->num_keys; i++) {
+		free(node->keys[i].key);
+		free(node->keys[i].ptr);
+	}
 	free(node->child);
 	free(node->keys);
 	free(node);
@@ -26,6 +30,19 @@ void db_node_destroy(struct db_node *node)
 
 void db_node_print(struct db_node *root, int indent)
 {
+	if (!root) return;
+	if (root->num_child)
+		db_node_print(root->child[0], indent+1);
+	for (int i = 0; i < root->num_keys; i++) {
+		for (int j = 0; j < indent; j++)
+			printf("\t");
+		printf("(");
+		db_key_print(root->keys[i]);
+		printf(")\n");
+		if ((i+1) < root->num_child)
+			db_node_print(root->child[i+1], indent+1);
+	}
+	/*
 	if (!root) return;
 	for (int i = 0; i < indent; i++)
 		printf("\t");
@@ -38,14 +55,35 @@ void db_node_print(struct db_node *root, int indent)
 	for (int i = 0; i < root->num_child; i++) {
 		db_node_print(root->child[i], indent+1);
 		printf("\n");
-	}
+	}*/
 }
 
 void db_key_print(struct db_key k)
 {
+	if (k.ptr)
+		printf("(%s)", (char*)k.ptr);
+	printf("%d", ((char*)k.key)[0]);
+	return;
 	int ks = k.ksize;
-	for (int j = 0; j < 1; j++)
-		printf("%02x", ((char*)k.key)[j]);
+	for (int j = 0; j < ks; j++)
+		printf("%c", ((char*)k.key)[j]);
+}
+
+void *db_lookup_value(struct db_node *node, struct db_key key)
+{
+	if (node->leaf) {
+		for (int i = 0; i < node->num_keys; i++) {
+			if (!CMP(key, node->keys[i])) {
+				return node->keys[i].ptr;
+			}
+		}
+		return NULL;
+	}
+	for (int i = 0; i < node->num_keys; i++) {
+		if (CMP(key, node->keys[i]) < 0)
+			return db_lookup_value(node->child[i], key);
+	}
+	return db_lookup_value(node->child[node->num_child-1], key);
 }
 
 struct db_node *db_lookup(struct db_node *node, struct db_key key)
@@ -58,45 +96,177 @@ struct db_node *db_lookup(struct db_node *node, struct db_key key)
 	return db_lookup(node->child[node->num_child-1], key);
 }
 
-/*
-struct db_node *db_lookup(struct db_node *root, struct db_key key)
+struct db_node *db_delete(struct db_node *root, struct db_key key)
 {
-	if (!root) return NULL;
-	struct db_node *node = root;
-	int found = 0;
-	while (node && !node->leaf) {
-		found = 0;
-		for (int i = 0; i < node->num_keys; i++) {
-			if (CMP(key, node->keys[i]) < 0) {
-				node = node->child[i];
-				found = 1;
-				break;
-			} else if (!CMP(key, node->keys[i])) {
-				node = node->child[i+1];
-				found = 1;
-				break;
+	struct db_node *close = db_lookup(root, key);
+	struct db_node *nroot = root;
+	if (close)
+		nroot = db_delete_internal(close, key);
+	return !nroot->parent ? nroot : root;
+}
+
+struct db_node *db_delete_internal(struct db_node *closest, struct db_key key)
+{
+	if ((closest->num_keys-1) >= (MAX_KEYS/2)) {
+		db_delkey(closest, key);
+		/*If parent update sibling keys*/
+		if (closest->parent) {
+			db_update_key(db_get_first_sibling(closest), closest);
+			db_update_key(closest, db_get_last_sibling(closest));
+		}
+		return closest;
+	} else if (closest->parent) {
+		db_delkey(closest, key);
+		struct db_node *s1 = db_get_first_sibling(closest);
+		struct db_node *s2 = db_get_last_sibling(closest);
+		int dis = 0;
+		if (s1 && s1->num_keys > (MAX_KEYS/2)) {
+			db_addkey(closest, s1->keys[s1->num_keys-1]);
+			db_remkey(s1, s1->keys[s1->num_keys-1]);
+			if (s1->num_child) {
+				db_addchild(closest, s1->child[s1->num_child-1]);
+				db_delchild(s1, s1->child[s1->num_child-1]);
 			}
-			if ((i+1)==node->num_keys && CMP(key, node->keys[i]) > 0) {
-				node = node->child[i+1];
-				found = 1;
-				break;
+			db_update_key(s1, closest);
+			dis = 1;
+		} else if (s2 && s2->num_keys > (MAX_KEYS/2)) {
+			db_addkey(closest, s2->keys[0]);
+			db_remkey(s2, s2->keys[0]);
+			if (s2->num_child) {
+				db_addchild(closest, s2->child[0]);
+				db_delchild(s2, s2->child[0]);
+			}
+			db_update_key(closest, s2);
+			dis = 1;
+		}
+		if (dis) {
+			for (int i = 0; (i < closest->num_keys) && (i < closest->num_child-1); i++) {
+				free(closest->keys[i].key);
+				closest->keys[i] = CPY(db_get_max_key(closest->child[i]));
 			}
 		}
-		if (!found) {
-			break;
-			node = node->child[node->num_child-1];
+		/*If that fails then merge with sibling and delete shared key*/
+		if (!dis && (s1 || s2)) {
+			struct db_key k;
+			if (s1) {
+				k = db_get_shared_key(s1, closest);
+				db_node_merge(closest, s1);
+			} else if (s2) {
+				k = db_get_shared_key(closest, s2);
+				db_node_merge(closest, s2);
+			}
+			if (!closest->leaf) {
+				db_addkey(closest, CPY(k));
+			}
+			struct db_node *par = closest->parent;
+			return db_delete_internal(par, k);
+		}
+	} else {
+		if (closest->num_child == 1) {
+			struct db_node *c = closest->child[0];
+			closest->child[0] = NULL;
+			c->parent = NULL;
+			db_node_destroy(closest);
+			return c;
+		}
+		db_delkey(closest, key);
+		return closest;
+	}
+	return closest;
+}
+
+struct db_key db_get_max_key(struct db_node *node)
+{
+	if (node->leaf) return node->keys[node->num_keys-1];
+	return db_get_max_key(node->child[node->num_child-1]);
+}
+
+struct db_key db_get_min_key(struct db_node *node)
+{
+	if (node->leaf) return node->keys[0];
+	return db_get_max_key(node->child[0]);
+}
+
+struct db_key db_get_shared_key(struct db_node *s1, struct db_node *s2)
+{
+	struct db_key k;
+	k.key = NULL;
+	k.ksize = 0;
+	k.ptr = NULL;
+	if (!s1 || !s2 || (s1->parent != s2->parent))
+			return  k;
+	struct db_node *parent = s1->parent;
+	/*Find shared key and delete it*/
+	for (int i = 0; i < parent->num_keys; i++) {
+		if (parent->child[i]==s1 && parent->child[i+1]==s2) {
+			return parent->keys[i];
 		}
 	}
-	return node;
+	return k;
 }
-*/
+
+void db_node_merge(struct db_node *n1, struct db_node *n2)
+{
+	for (int i = 0; i < n2->num_keys; i++) {
+		db_addkey(n1, n2->keys[i]);
+	}
+	for (int i = 0; i < n2->num_child; i++) {
+		db_addchild(n1, n2->child[i]);
+	}
+	free(n2->keys);
+	free(n2->child);
+	n2->num_child = 0, n2->num_keys = 0;
+	n2->keys = NULL, n2->child = NULL;
+	db_delchild(n2->parent, n2);
+	db_node_destroy(n2);
+}
+
+void db_update_key(struct db_node *c1, struct db_node *c2)
+{
+	if (!c1 || !c2 || (c1->parent != c2->parent))
+			return;
+	struct db_node *parent = c1->parent;
+	if (!parent) return;
+	for (int i = 0; i < parent->num_keys; i++) {
+		if (parent->child[i] == c1 && parent->child[i+1] == c2) {
+			free(parent->keys[i].key);
+			//parent->keys[i] = CPY(c2->keys[0]);
+			parent->keys[i] = CPY(db_get_min_key(c2));
+			return;
+		}
+	}
+}
+
+struct db_node *db_get_first_sibling(struct db_node *child)
+{
+	struct db_node *p = child->parent;
+	if (!p) return NULL;
+	for (int i = 1; i < p->num_child; i++) {
+		if (p->child[i]==child)
+			return p->child[i-1];
+	}
+	return NULL;
+}
+
+struct db_node *db_get_last_sibling(struct db_node *child)
+{
+	struct db_node *p = child->parent;
+	if (!p) return NULL;
+	for (int i = 0; i < p->num_child-1; i++) {
+		if (p->child[i]==child)
+			return p->child[i+1];
+	}
+	return NULL;
+}
 
 struct db_node *db_insert(struct db_node *root, struct db_key key)
 {
 	struct db_node * closest = db_lookup(root, key);
 	struct db_node *nroot = root;
+	struct db_key cpy = CPY(key);
+	cpy.ptr = key.ptr;
 	if (closest)
-		nroot = db_insert_internal(closest, CPY(key));
+		nroot = db_insert_internal(closest, cpy);
 	return !nroot->parent ? nroot : root;
 }
 
@@ -109,29 +279,19 @@ struct db_node *db_insert_internal(struct db_node *closest, struct db_key key)
 		db_addkey(closest, key);
 		struct db_node *left = db_node_init(NULL);
 		struct db_node *right = db_node_init(NULL);
-		key = CPY(db_node_split(closest, left, right));
+		key = db_node_split(closest, left, right);
 		struct db_node *newroot = db_node_init(NULL);
 		db_addkey(newroot, key);
 		db_addchild(newroot, left);
 		db_addchild(newroot, right);
 		return newroot;
-	} /*else if (closest->parent->num_keys < MAX_KEYS) {
+	} else {
 		db_addkey(closest, key);
 		struct db_node *left = db_node_init(NULL);
 		struct db_node *right = db_node_init(NULL);
 		struct db_node *parent = closest->parent;
-		db_remchild(parent, closest);
-		key = CPY(db_node_split(closest, left, right));
-		db_addchild(parent, left);
-		db_addchild(parent, right);
-		return db_insert_internal(parent, key);
-	} */else {
-		db_addkey(closest, key);
-		struct db_node *left = db_node_init(NULL);
-		struct db_node *right = db_node_init(NULL);
-		struct db_node *parent = closest->parent;
-		db_remchild(parent, closest);
-		key = CPY(db_node_split(closest, left, right));
+		db_delchild(parent, closest);
+		key = db_node_split(closest, left, right);
 		db_addchild(parent, left);
 		db_addchild(parent, right);
 		return db_insert_internal(parent, key);
@@ -173,7 +333,7 @@ struct db_key db_node_split(struct db_node *node, struct db_node *left, struct d
 	free(okeys);
 	free(ochild);
 
-	return mkey;
+	return wasleaf ? CPY(mkey) : mkey;
 }
 
 void db_addchild(struct db_node *node, struct db_node *child)
@@ -193,7 +353,7 @@ void db_addchild(struct db_node *node, struct db_node *child)
 	node->child[idx] = child;
 }
 
-void db_remchild(struct db_node *node, struct db_node *child)
+void db_delchild(struct db_node *node, struct db_node *child)
 {
 	if (!node) return;
 	int idx = -1;
@@ -232,11 +392,62 @@ void db_addkey(struct db_node *node, struct db_key key)
 	node->keys[idx] = key;
 }
 
+void db_delkey(struct db_node *node, struct db_key key)
+{
+	if (!node) return;
+	int idx = -1;
+	for (int i = 0; i < node->num_keys; i++) {
+		if (!CMP(key, node->keys[i])) {
+			idx = i;
+			break;
+		}
+	}
+	if (idx < 0) return;
+	free(node->keys[idx].key);
+	free(node->keys[idx].ptr);
+	int size = ((node->num_keys-1)-idx) * sizeof(struct db_key);
+	if (idx < node->num_keys)
+		memmove(node->keys+idx,node->keys+idx+1, size);
+	node->num_keys--;
+	if (!node->num_keys) {
+		free(node->keys);
+		node->keys = NULL;
+	} else {
+		node->keys = realloc(node->keys, sizeof(struct db_key)*node->num_keys);
+	}
+}
+
+void db_remkey(struct db_node *node, struct db_key key)
+{
+	if (!node) return;
+	int idx = -1;
+	for (int i = 0; i < node->num_keys; i++) {
+		if (!CMP(key, node->keys[i])) {
+			idx = i;
+			break;
+		}
+	}
+	if (idx < 0) return;
+	//free(node->keys[idx].key);
+	//free(node->keys[idx].ptr);
+	int size = ((node->num_keys-1)-idx) * sizeof(struct db_key);
+	if (idx < node->num_keys)
+		memmove(node->keys+idx,node->keys+idx+1, size);
+	node->num_keys--;
+	if (!node->num_keys) {
+		free(node->keys);
+		node->keys = NULL;
+	} else {
+		node->keys = realloc(node->keys, sizeof(struct db_key)*node->num_keys);
+	}
+}
+
 struct db_key db_key_copy(struct db_key key)
 {
 	struct db_key cpy;
 	cpy.key = malloc(key.ksize);
 	cpy.ksize = key.ksize;
+	cpy.ptr = NULL;
 	memcpy(cpy.key, key.key, key.ksize);
 	return cpy;
 }
