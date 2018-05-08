@@ -4,6 +4,7 @@ struct db_node *db_node_init(struct db_node *parent)
 {
 	struct db_node *node = malloc(sizeof(struct db_node));
 
+	node->next = NULL;
 	node->leaf = 1;
 	node->parent = parent;
 	node->keys = NULL, node->child = NULL;
@@ -62,7 +63,8 @@ void db_key_print(struct db_key k)
 {
 	if (k.ptr)
 		printf("(%s)", (char*)k.ptr);
-	printf("%d", ((char*)k.key)[0]);
+	printf("%.*s", (int)k.ksize, (char*)k.key);
+	//printf("%d", *(int*)k.key);
 	return;
 	int ks = k.ksize;
 	for (int j = 0; j < ks; j++)
@@ -264,7 +266,7 @@ struct db_node *db_insert(struct db_node *root, struct db_key key)
 	struct db_node * closest = db_lookup(root, key);
 	struct db_node *nroot = root;
 	struct db_key cpy = CPY(key);
-	cpy.ptr = key.ptr;
+	cpy.ptr = key.ptr, cpy.psize = key.psize;
 	if (closest)
 		nroot = db_insert_internal(closest, cpy);
 	return !nroot->parent ? nroot : root;
@@ -328,12 +330,44 @@ struct db_key db_node_split(struct db_node *node, struct db_node *left, struct d
 			db_addchild(right, ochild[i]);
 		else if (i <= median)
 			db_addchild(left, ochild[i]);
-	}
+	}/*
+	if (wasleaf) {
+		left->next = right;
+	} else {
+		struct db_node *rc=left,*lc=right;
+		while (rc && !rc->leaf && rc->num_child) rc=rc->child[rc->num_child-1];
+		while (lc && !lc->leaf && lc->num_child) lc=lc->child[0];
+		rc->next = lc;
+		printf("\n");
+		db_node_print(lc, 0);
+		db_node_print(rc, 0);
+		printf("\n");
+	}*/
 
 	free(okeys);
 	free(ochild);
 
 	return wasleaf ? CPY(mkey) : mkey;
+}
+
+int db_getleaves(struct db_node *node, struct db_node **list)
+{
+	int len = 0;
+	for (int i = 0; i < node->num_child; i++) {
+		len += db_getleaves(node->child[i], list);
+	}
+
+	if (node->leaf) {
+		if (!(*list)) {
+			*list = node;
+		} else {
+			struct db_node *cur = *list;
+			while (cur->next) cur = cur->next;
+			cur->next = node;
+		}
+		len+= node->num_keys;
+	}
+	return len;
 }
 
 void db_addchild(struct db_node *node, struct db_node *child)
@@ -448,6 +482,7 @@ struct db_key db_key_copy(struct db_key key)
 	cpy.key = malloc(key.ksize);
 	cpy.ksize = key.ksize;
 	cpy.ptr = NULL;
+	cpy.psize = 0;
 	memcpy(cpy.key, key.key, key.ksize);
 	return cpy;
 }

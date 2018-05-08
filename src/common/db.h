@@ -15,17 +15,16 @@
 struct db_node {
 	struct db_key *keys;
 	int num_keys;
-
 	struct db_node **child;
 	int num_child;
 	int leaf;
+	struct db_node *next;
 	struct db_node *parent;
 };
 
 struct db_key {
-	size_t ksize;
-	void * key;
-	void *ptr;
+	size_t ksize, psize;
+	void * key, *ptr;
 };
 
 
@@ -60,5 +59,6 @@ void db_delchild(struct db_node *node, struct db_node *child);
 struct db_key db_key_copy(struct db_key key);
 int db_key_compare(struct db_key k1, struct db_key k2);
 void db_key_print(struct db_key k);
+int db_getleaves(struct db_node *root, struct db_node **list);
 
 #endif
