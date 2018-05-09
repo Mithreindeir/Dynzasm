@@ -19,7 +19,7 @@ void disassemble(struct trie_node *root, unsigned char *out, long max)
 		struct dis disas;
 		int oldbit = bit;
 		bit+=x86_disassemble(root, out+bit, max-bit, &disas);
-		addr += bit;
+		addr = bit;
 		int w = 20;
 		for (int i = oldbit; w>=2 && i < bit; i++) {
 			printf("%02x", out[i]);
@@ -70,100 +70,6 @@ void disas_stdin(struct trie_node *root)
 
 int main(int argc, char ** argv)
 {
-	if (argc < 2) return 1;
-	struct disk *d = disk_open(argv[1]);
-
-	struct db_node *rt = deserialize(d);
-	char input[256];
-	struct db_key ink;
-	while (1) {
-		printf(">");
-		fgets(input, 256, stdin);
-		char * cmd = strtok(input, " \n");
-		if (!cmd) continue;
-		char *args[3] = { NULL, NULL, NULL };
-		int iter = 0;
-		while (iter < 3 && (args[iter++]=strtok(NULL, " \n")));
-		//printf("command: %s, %s %s %s\n", cmd, args[0], args[1], args[2]);
-		if (!strcmp(cmd, "set") && args[0] && args[1]) {
-			ink.key = args[0];
-			ink.ksize = strlen(args[0]);
-			ink.psize = strlen(args[1])+1;
-			ink.ptr = malloc(ink.psize);
-			memcpy(ink.ptr, args[1], ink.psize-1);
-			((char*)ink.ptr)[ink.psize-1] = 0;
-			rt = db_insert(rt, ink);
-			printf("%s -> %s\n", args[0], args[1]);
-		} else if (!strcmp(cmd, "get") && args[0]) {
-			ink.key = args[0];
-			ink.ksize = strlen(args[0]);
-			ink.ptr = NULL;
-			char * str = db_lookup_value(rt, ink);
-			printf("%s -> %s\n", args[0], str);
-		} else if (!strcmp(cmd, "dump")) {
-			db_node_print(rt, 0);
-		} else if (!strcmp(cmd, "quit")) {
-			break;
-		} else {
-			printf("Invalid command\n");
-			break;
-		}
-	}
-	db_node_print(rt, 0);
-
-	serialize(rt, d);
-	disk_write(d);
-
-	db_node_destroy(rt);
-	disk_destroy(d);
-	return 0;
-	struct db_node *rdb = db_node_init(NULL);
-	struct db_key k1;
-	char buf[64];
-	char buf2[64];
-	int total = 15;
-	clock_t time = clock();
-	for (int i = 0; i < total; i++) {
-		//snprintf(buf2, 6, "%c%c%c", 'a'+i, 'b'+i, 'c'+i);
-		snprintf(buf2, 6, "%d", i * 2 + 123);
-		snprintf(buf, 64, "key%d", i);
-		//snprintf(buf2, 64, "val%d", i);
-		k1.key = buf;
-		k1.ksize = strlen(buf);
-		size_t b2 = strlen(buf2);
-		char *str = malloc(b2+1);
-		memcpy(str, buf2, b2);
-		str[b2] = 0;
-		k1.ptr = str;
-		rdb = db_insert(rdb, k1);
-	}
-	clock_t elap = clock() - time;
-	double et = (double)(elap)/CLOCKS_PER_SEC;
-	printf("TIME %f AVG %f AND %f PER SEC\n", et, et/total, 1/(et/total));
-	//db_node_print(rdb, 0);
-
-	time = clock();
-	struct db_key k;
-	/*
-	for (int i = 0 ; i < total; i++) {
-		//snprintf(buf, 64, "key%d", 4);
-		k.key = &i;
-		k.ksize = sizeof(int);
-		k.ptr = NULL;
-		char * str = db_lookup_value(rdb, k);
-		long n = strtol(str, NULL, 10);
-		if (n!= (i*2+123))
-				printf("ASKDLJASDJKASDJKSDA\n");
-		//printf("%d\n", n);
-	}*/
-	elap = clock() - time;
-	et = (double)(elap)/CLOCKS_PER_SEC;
-	printf("TIME %f AVG %f AND %f PER SEC\n", et, et/total, 1/(et/total));
-	db_node_print(rdb, 0);
-	//serialize(rdb);
-
-	db_node_destroy(rdb);
-	return 0;
 	struct trie_node *root = trie_init(0, NULL);
 	x86_parse(root);
 
