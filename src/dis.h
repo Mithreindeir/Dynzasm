@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "common/db.h"
 
 #define DIS_ADDR 	3
 #define DIS_REG 	2
@@ -63,16 +64,19 @@ struct dis {
 };
 
 
-void dis_init(struct dis *dis);
+struct dis *dis_init();
+void dis_destroy(struct dis *disasm);
 void dis_add_operand(struct dis *dis, struct operand_tree *tree);
-void operand_tree_init(struct operand_tree *tree, int type);
-void operand_tree_add(struct operand_tree *node, struct operand_tree *child);
-void operand_tree_free(struct operand_tree *node);
-/*Convenience initializers for operands*/
-void operand_reg(struct operand_tree *tree, const char *reg);
-void operand_imm(struct operand_tree *tree, const unsigned long imm);
-void operand_addr(struct operand_tree *tree, const unsigned long addr);
 
+struct operand_tree *operand_tree_init(int type);
+void operand_tree_destroy(struct operand_tree *node);
+void operand_tree_add(struct operand_tree *node, struct operand_tree *child);
+/*Convenience initializers for operands*/
+struct operand_tree *operand_reg(const char *reg);
+struct operand_tree *operand_imm(const unsigned long imm);
+struct operand_tree *operand_addr(const unsigned long addr);
+
+int operand_squash_replace(char *buf, long max, struct operand_tree *tree, struct db_node *root);
 int operand_squash(char *buf, long max, struct operand_tree *tree);
 
 #endif

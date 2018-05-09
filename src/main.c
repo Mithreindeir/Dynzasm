@@ -16,9 +16,10 @@ void disassemble(struct trie_node *root, unsigned char *out, long max)
 
 	while (bit < max) {
 		printf("%#08lx: ", addr);
-		struct dis disas;
+		int used_bytes = 0;
+		struct dis *disas = x86_disassemble(root, out+bit, max-bit, &used_bytes);
 		int oldbit = bit;
-		bit+=x86_disassemble(root, out+bit, max-bit, &disas);
+		bit += used_bytes;
 		addr = bit;
 		int w = 20;
 		for (int i = oldbit; w>=2 && i < bit; i++) {
@@ -26,17 +27,17 @@ void disassemble(struct trie_node *root, unsigned char *out, long max)
 			w-=2;
 		}
 		while (w-->0) printf(" ");
+		if (!disas) continue;
 		char buf[256];
 		w = 7;
-		printf("%s ", disas.mnemonic);
-		w -= strlen(disas.mnemonic);
+		printf("%s ", disas->mnemonic);
+		w -= strlen(disas->mnemonic);
 		while (w-- > 0) printf(" ");
-		for (int i = 0; i < disas.num_operands; i++) {
-			operand_squash(buf, 256, disas.operands[i]);
-			printf("%s%c ", buf, (i+1)<disas.num_operands?',':' ');
-			operand_tree_free(disas.operands[i]);
+		for (int i = 0; i < disas->num_operands; i++) {
+			operand_squash(buf, 256, disas->operands[i]);
+			printf("%s%c ", buf, (i+1)<disas->num_operands?',':' ');
 		}
-		free(disas.operands);
+		dis_destroy(disas);
 		printf("\n");
 	}
 }

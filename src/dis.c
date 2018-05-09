@@ -1,8 +1,8 @@
 #include "dis.h"
 
-void dis_init(struct dis *dis)
+struct dis *dis_init()
 {
-	if (!dis) return;
+	struct dis *dis = malloc(sizeof(struct dis));
 
 	dis->id = 0;
 	dis->operands = NULL;
@@ -10,6 +10,20 @@ void dis_init(struct dis *dis)
 	memset(dis->mnemonic, 0, MNEM_SIZE);
 	memset(dis->squashed, 0, SQUASH_SIZE);
 	memset(dis->group, 0, GROUP_SIZE);
+
+	return dis;
+}
+
+void dis_destroy(struct dis *disasm)
+{
+	if (!disasm) return;
+
+	for (int i = 0; i < disasm->num_operands; i++) {
+		operand_tree_destroy(disasm->operands[i]);
+	}
+
+	free(disasm->operands);
+	free(disasm);
 }
 
 void dis_add_operand(struct dis *dis, struct operand_tree *tree)
@@ -23,9 +37,9 @@ void dis_add_operand(struct dis *dis, struct operand_tree *tree)
 	dis->operands[dis->num_operands-1] = tree;
 }
 
-void operand_tree_init(struct operand_tree *tree, int type)
+struct operand_tree *operand_tree_init(int type)
 {
-	if (!tree) return;
+	struct operand_tree *tree = malloc(sizeof(struct operand_tree));
 
 	tree->type = type;
 	if (type == DIS_OPER) {
@@ -37,13 +51,17 @@ void operand_tree_init(struct operand_tree *tree, int type)
 	} else {
 		//error
 	}
+
+	return tree;
 }
 
-void operand_tree_free(struct operand_tree *node)
+void operand_tree_destroy(struct operand_tree *node)
 {
+	if (!node) return;
+
 	if (node->type == DIS_BRANCH) {
 		for (int i = 0; i < TREE_NCHILD(node); i++) {
-			operand_tree_free(TREE_CHILD(node, i));
+			operand_tree_destroy(TREE_CHILD(node, i));
 		}
 		free(node->body.op_tree.operands);
 	}
@@ -61,29 +79,37 @@ void operand_tree_add(struct operand_tree *node, struct operand_tree *child)
 	TREE_CHILD(node, TREE_NCHILD(node)-1) = child;
 }
 
-void operand_reg(struct operand_tree *tree, const char *reg)
+struct operand_tree *operand_reg(const char *reg)
 {
-	if (!reg) return;
-	operand_tree_init(tree, DIS_OPER);
+	struct operand_tree *tree = operand_tree_init(DIS_OPER);
+
 	tree->body.operand.operand_type = DIS_REG;
 	long len = strlen(reg);
 	len = len >= REG_SIZE ? (REG_SIZE-2) : len;
 	memcpy(TREE_REG(tree), reg, len);
 	TREE_REG(tree)[len] = 0;
+
+	return tree;
 }
 
-void operand_imm(struct operand_tree *tree, const unsigned long imm)
+struct operand_tree *operand_imm(const unsigned long imm)
 {
-	operand_tree_init(tree, DIS_OPER);
+	struct operand_tree *tree = operand_tree_init(DIS_OPER);
+
 	tree->body.operand.operand_type = DIS_IMM;
 	TREE_IMM(tree) = imm;
+
+	return tree;
 }
 
-void operand_addr(struct operand_tree *tree, const unsigned long addr)
+struct operand_tree *operand_addr(const unsigned long addr)
 {
-	operand_tree_init(tree, DIS_OPER);
+	struct operand_tree *tree = operand_tree_init(DIS_OPER);
+
 	tree->body.operand.operand_type = DIS_ADDR;
 	TREE_ADDR(tree) = addr;
+
+	return tree;
 }
 
 

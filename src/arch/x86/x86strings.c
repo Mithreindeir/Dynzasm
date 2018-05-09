@@ -38,8 +38,8 @@ const char * operand_size_prefix[4] = {
 
 const char *get_register(int reg, int size, int rexb)
 {
-	int idx = reg * 4 + size-1 + rexb  * 32;
-	if (idx >= (signed int)(sizeof(general_registers)/sizeof(char*))) return NULL;
+	int idx = reg * 4 + size-1 + !!rexb * 32;
+	if (idx < 0 || idx >= (int)(sizeof(general_registers)/sizeof(char*))) return NULL;
 	return general_registers[idx];
 }
 
