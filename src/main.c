@@ -103,6 +103,7 @@ int main(int argc, char ** argv)
 	}
 
 	ds_destroy(ds);
+	free(out);
 	return 0;
 	struct trie_node *root = trie_init(0, NULL);
 	x86_parse(root);
