@@ -8,6 +8,7 @@
 #include "common/db.h"
 #include "common/disk.h"
 #include "common/ser.h"
+#include "disas.h"
 
 void disassemble(struct trie_node *root, unsigned char *out, long max)
 {
@@ -17,7 +18,7 @@ void disassemble(struct trie_node *root, unsigned char *out, long max)
 	while (bit < max) {
 		printf("%#08lx: ", addr);
 		int used_bytes = 0;
-		struct dis *disas = x86_disassemble(root, out+bit, max-bit, &used_bytes);
+		struct dis *disas = x86_disassemble(root, out+bit, max-bit, addr, &used_bytes);
 		int oldbit = bit;
 		bit += used_bytes;
 		addr = bit;
@@ -71,6 +72,38 @@ void disas_stdin(struct trie_node *root)
 
 int main(int argc, char ** argv)
 {
+	struct disassembler *ds = ds_init(X64_ARCH);
+
+	//unsigned char bytes[] = "\x55\x89\xe5\x83\xec\x28\xc7\x45\xf4\x00\x00\x00\x00\x8b\x45\xf4\x8b\x00\x83\xf8\x0e\x75\x0c\xc7\x04\x24\x30\x87\x04\x08\xe8\xd3\xfe\xff\xff\xb8\x00\x00\x00\x00\xc9\xc3";
+	char bytes[] = "554889e54883ec70897d9c4889759064"
+	"488b042528000000488945f831c0bf01"
+	"000000e822090000488945b0488b0596"
+	"570000488b1597570000488945c04889"
+	"55c8488b0590570000488b1591570000"
+	"488945d0488955d8488b058a57000048"
+	"8945e00fb70587570000668945e80fb6"
+	"057e5700008845ea488d75c0488b45b0"
+	"b900000000ba2a0000004889c7e8b009"
+	"000048c745b800000000c745ac000000"
+	"00eb33488b45b8488d4858488b45b848"
+	"8d5038488b45b8488b80d80000004889"
+	"c6488d3df1560000b800000000e887f8"
+	"ffff8345ac01488b45b08b40103945ac"
+	"7d23488b45b0488b40088b55ac4863d2"
+	"48c1e2034801d0488b00488945";
+	int size = sizeof(bytes)-1;
+	unsigned char *out = malloc(size);
+	memset(out, 0, size);
+	long max = ascii_to_hex(out, bytes, size);
+
+	ds_decode(ds, out, max, 0x0);
+	struct dis *dis = NULL;
+	DS_FOREACH(ds, dis) {
+		printf("%#08lx:\t%s\t%s\n", dis->address, dis->mnemonic, dis->op_squash);
+	}
+
+	ds_destroy(ds);
+	return 0;
 	struct trie_node *root = trie_init(0, NULL);
 	x86_parse(root);
 

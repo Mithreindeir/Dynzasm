@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "common/db.h"
 
 #define DIS_ADDR 	3
@@ -21,6 +22,8 @@
 #define FMT_SIZE 	32
 
 //Macros for easy tree access
+#define TREE_TYPE(t) (t->type)
+#define TREE_OPTYPE(t) (t->body.operand.operand_type)
 #define TREE_REG(t) (t->body.operand.operand_val.reg)
 #define TREE_ADDR(t) (t->body.operand.operand_val.addr)
 #define TREE_IMM(t) (t->body.operand.operand_val.imm)
@@ -60,13 +63,15 @@ struct dis {
 	unsigned int id;
 	unsigned int group[10];
 	char mnemonic[MNEM_SIZE];
-	char squashed[128];
+	char op_squash[SQUASH_SIZE];
+	uint64_t address;
 };
 
 
 struct dis *dis_init();
 void dis_destroy(struct dis *disasm);
 void dis_add_operand(struct dis *dis, struct operand_tree *tree);
+void dis_squash(struct dis *dis);
 
 struct operand_tree *operand_tree_init(int type);
 void operand_tree_destroy(struct operand_tree *node);

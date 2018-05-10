@@ -5,10 +5,11 @@ struct dis *dis_init()
 	struct dis *dis = malloc(sizeof(struct dis));
 
 	dis->id = 0;
+	dis->address = 0;
 	dis->operands = NULL;
 	dis->num_operands = 0;
 	memset(dis->mnemonic, 0, MNEM_SIZE);
-	memset(dis->squashed, 0, SQUASH_SIZE);
+	memset(dis->op_squash, 0, SQUASH_SIZE);
 	memset(dis->group, 0, GROUP_SIZE);
 
 	return dis;
@@ -84,6 +85,7 @@ struct operand_tree *operand_reg(const char *reg)
 	struct operand_tree *tree = operand_tree_init(DIS_OPER);
 
 	tree->body.operand.operand_type = DIS_REG;
+	if (!reg) return tree;
 	long len = strlen(reg);
 	len = len >= REG_SIZE ? (REG_SIZE-2) : len;
 	memcpy(TREE_REG(tree), reg, len);
@@ -112,6 +114,15 @@ struct operand_tree *operand_addr(const unsigned long addr)
 	return tree;
 }
 
+void dis_squash(struct dis *dis)
+{
+	int iter = 0;
+	for (int i = 0; i < dis->num_operands; i++) {
+		iter += operand_squash(dis->op_squash+iter, SQUASH_SIZE-iter, dis->operands[i]);
+		if ((i+1) < dis->num_operands)
+			iter += snprintf(dis->op_squash+iter, SQUASH_SIZE-iter, ", ");
+	}
+}
 
 int operand_squash(char *buf, long max, struct operand_tree *tree)
 {

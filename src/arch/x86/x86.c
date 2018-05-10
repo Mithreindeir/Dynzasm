@@ -1,6 +1,6 @@
 #include "x86.h"
 
-struct dis *x86_disassemble(struct trie_node *root, u8 *stream, long max, int *used_bytes)
+struct dis *x86_disassemble(struct trie_node *root, u8 *stream, long max, uint64_t addr, int *used_bytes)
 {
 	if (!max) return 0;
 	long iter = 0;
@@ -80,6 +80,14 @@ struct dis *x86_disassemble(struct trie_node *root, u8 *stream, long max, int *u
 			dis_add_operand(disas, operand);
 	}
 	if (ufb > iter) iter = ufb;
+	/*Check if the operands type was relative, if so add the start address and the used bytes*/
+	for (int i = 0; i < disas->num_operands && i < e->num_op; i++) {
+		if (e->operand[i][0 ]== 'J' || e->operand[i][0] == 'A') {
+			if (disas->operands[i]->type==DIS_OPER && TREE_OPTYPE(disas->operands[i])==DIS_ADDR) {
+				TREE_ADDR(disas->operands[i]) += addr + iter;
+			}
+		}
+	}
 
 	*used_bytes = iter;
 
@@ -137,7 +145,7 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op
 		case 'I':; /*Immediate Value*/
 			uint64_t imm = 0;
 			iter += get_integer(&imm, op_size, stream, max);
-			if (op_size == 1 && imm > 0x80) imm = 0x100 - imm;
+			//if (op_size == 1 && imm > 0x80) imm = 0x100 - imm;
 			*operand = operand_imm(imm);
 			break;
 		case 'J':; /*Relative address */
@@ -216,7 +224,7 @@ long x86_decode_modrm(struct operand_tree **operand, int op_size, int addr_size,
 		return iter;
 	}
 	/*If op_size is 0 it means that it was a memory argument and its encoded wrong if it gets this far*/
-	op_size = op_size == 0 ? addr_size : op_size;
+	//op_size = op_size == 0 ? addr_size : op_size;
 	/*MODRM: EBP is invalid rm byte in indirect mode, so it means disp only*/
 	if (MODRM_DISPONLY(mod, rm)) {
 		if (max < 4) return iter;

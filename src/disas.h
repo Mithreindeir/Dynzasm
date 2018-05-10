@@ -10,6 +10,9 @@
 #include "dis.h"
 #include "common/trie.h"
 
+#define DS_FOREACH(ds, cur)\
+       for (int i = 0; i < ds->num_instr && (cur=ds->instr[i]); i++)
+
 #define X64_ARCH 1
 
 struct disassembler {
