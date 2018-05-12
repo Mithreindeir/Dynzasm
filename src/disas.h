@@ -13,10 +13,18 @@
 #define DS_FOREACH(ds, cur)\
        for (int i = 0; i < ds->num_instr && (cur=ds->instr[i]); i++)
 
-#define X64_ARCH 1
+#define X86_ARCH 1
+
+#ifndef MODE_64B
+#define MODE_64B MODE_X64
+#endif
+#ifndef MODE_32B
+#define MODE_32B MODE_X86
+#endif
+
 
 struct disassembler {
-	int arch;
+	int arch, mode;
 
 	struct dis **instr;
 	int num_instr;
@@ -24,9 +32,10 @@ struct disassembler {
 	struct trie_node *root;
 };
 
-struct disassembler *ds_init(int isa);
+struct disassembler *ds_init(int isa, int mode);
 
 void ds_decode(struct disassembler *ds, unsigned char *stream, int size, uint64_t entry);
+void ds_addinstr(struct disassembler *ds, struct dis *dis);
 
 void ds_destroy(struct disassembler *ds);
 

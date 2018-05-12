@@ -124,6 +124,58 @@ void dis_squash(struct dis *dis)
 	}
 }
 
+int operand_squash_replace(char *buf, long max, struct operand_tree *tree, struct db_node *root)
+{
+	if (!tree) return 0;
+
+	long iter = 0;
+	if (tree->type == DIS_OPER) {
+		if (tree->body.operand.operand_type == DIS_ADDR) {
+			iter+=snprintf(buf+iter,max-iter,"%#lx", TREE_ADDR(tree));
+		} else if (tree->body.operand.operand_type == DIS_IMM) {
+			iter+=snprintf(buf+iter,max-iter,"%#lx", TREE_IMM(tree));
+		} else if (tree->body.operand.operand_type == DIS_REG) {
+			iter+=snprintf(buf+iter,max-iter,"%s", TREE_REG(tree));
+		}
+	} else if (tree->type == DIS_BRANCH) {
+		if (!TREE_FORMAT(tree)) {
+			for (int i = 0; i < TREE_NCHILD(tree); i++) {
+				iter+=operand_squash_replace(buf+iter, max-iter, TREE_CHILD(tree,i), root);
+			}
+			return iter;
+		}
+		char *format = TREE_FORMAT(tree);
+		int flen = strlen(format), flast = 0;
+		for (int i = 0; i < flen; i++) {
+			if (format[i]=='$') {
+				if (i-flast) {
+					iter += snprintf(buf+iter, max-iter, "%*.*s", i-flast,i-flast,format+flast);
+				}
+				int num = (i+1)<flen ? (signed int) format[i+1]-0x30 : -1;
+				if (num >= 0 && num < 10 && num < TREE_NCHILD(tree)) {
+					iter += operand_squash_replace(buf+iter, max-iter, TREE_CHILD(tree, num), root);
+				}
+				i++;
+				flast = i+1;
+				continue;
+			}
+			if ((i+1)==flen)
+				iter += snprintf(buf+iter, max-iter, "%s", format+flast);
+		}
+	}
+	struct db_key k;
+	char kbuf[32];
+	memset(kbuf, 0, 32);
+	memcpy(kbuf, buf, max > 32 ? 32 : max);
+	k.key = kbuf;
+	k.ksize = strlen(kbuf);
+	char *val = db_lookup_value(root, k);
+	if (val) {
+		iter = snprintf(buf, max, "%s", val);
+	}
+	return iter;
+}
+
 int operand_squash(char *buf, long max, struct operand_tree *tree)
 {
 	if (!tree) return 0;

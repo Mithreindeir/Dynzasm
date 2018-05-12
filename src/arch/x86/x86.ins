@@ -3,108 +3,108 @@
 02 add Gb Eb
 03 add Gv Ev
 04 add al Ib
-05 add rax Id
-06 invalid
-07 invalid
+05 add eax Iv
+06 push es
+07 pop es
 08 or Eb Gb
 09 or Ev Gv
 0a or Gb Eb
 0b or Gv Ev
 0c or al Ib
-0d or rax Id
-0e invalid
+0d or eax Iv
+0e push cs
 10 adc Eb Gb
 11 adc Ev Gv
 12 adc Gb Eb
 13 adc Gv Ev
 14 adc al Ib
-15 adc rax Id
-16 invalid
-17 invalid
+15 adc eax Iv
+16 push ss
+17 pop ss
 18 sbb Eb Gb
 19 sbb Ev Gv
 1a sbb Gb Eb
 1b sbb Gv Ev
 1c sbb al Ib
-1d sbb rax Id
-1e invalid
-1f invalid
+1d sbb eax Iv
+1e push ds
+1f pop ds
 20 and Eb Gb
 21 and Ev Gv
 22 and Gb Eb
 23 and Gv Ev
 24 and al Ib
-25 and eax Id
-26 null
-27 invalid
+25 and eax Iv
+26 es f:4 f:8
+27 daa
 28 sub Eb Gb
 29 sub Ev Gv
 2a sub Gb Eb
 2b sub Gv Ev
 2c sub al Ib
-2d sub rax Id
-2e null
-2f invalid
+2d sub eax Iv
+2e cs f:4 f:8
+2f das
 30 xor Eb Gb
 31 xor Ev Gv
 32 xor Gb Eb
 33 xor Gv Ev
 34 xor al Ib
-35 xor eax Id
-36 null
-37 invalid
+35 xor eax Iv
+36 invalid
+37 aaa
 38 cmp Eb Gb
 39 cmp Ev Gv
 3a cmp Gb Eb
 3b cmp Gv Ev
 3c cmp al Ib
-3d cmp rax Id
-3e null
-3f invalid
-40 rex f:4
-41 rex.b f:4
-42 rex.x f:4
-43 rex.xb f:4
-44 rex.r f:4
-45 rex.rb f:4
-46 rex.rx f:4
-47 rex.rxb f:4
-48 rex.w f:4
-49 rex.wb f:4
-4a rex.wx f:4
-4b rex.wxb f:4
-4c rex.wr f:4
-4d rex.wrb f:4
-4e rex.wrx f:4
-4f rex.wrxb f:4
-50 push rax
-51 push rcx
-52 push rdx
-53 push rbx
-54 push rsp
-55 push rbp
-56 push rsi
-57 push rdi
-58 pop rax
-59 pop rcx
-5a pop rdx
-5b pop rbx
-5c pop rsp
-5d pop rbp
-5e pop rsi
-5f pop rdi
-60 invalid
-61 invalid
-62 invalid
-63 movsxd Gv Ed
-64 fs f:4 f:8
-65 gs f:4 f:8
-66 ov f:4
-67 av f:4
-68 push Id
-69 imul Gv Ev Id
+3d cmp eax Iv
+3e
+3f aas
+40 inc eax
+41 inc ecx
+42 inc edx
+43 inc ebx
+44 inc esp
+45 inc ebp
+46 inc esi
+47 inc edi
+48 dec eax
+49 dec ecx
+4a dec edx
+4b dec ebx
+4c dec esp
+4d dec ebp
+4e dec esi
+4f dec edi
+50 push eax
+51 push ecx
+52 push edx
+53 push ebx
+54 push esp
+55 push ebp
+56 push esi
+57 push edi
+58 pop eax
+59 pop ecx
+5a pop edx
+5b pop ebx
+5c pop esp
+5d pop ebp
+5e pop esi
+5f pop edi
+60 pusha
+61 popa
+62 bound Gv Ma
+63 arpl Ew Rw
+64
+65
+66
+67
+68 push Iv
+69 imul Gv Ev Iv
 6a push Ib
-6b imul Gv Ev Ib
+6b imul Gv Ev Iv
 6c insb Yb dx
 6d insw Yb dx
 6e outsb Dx Xb
@@ -134,16 +134,25 @@
 8028 sub Eb Ib
 8030 xor Eb Ib
 8038 cmp Eb Ib
+
 81 invalid f:2
-8100 add Eb Id
-8108 or Eb Id
-8110 adc Eb Id
-8118 sbb Eb Id
-8120 and Eb Id
-8128 sub Eb Id
-8130 xor Eb Id
-8138 cmp Eb Id
-82 invalid
+8100 add Eb Iv
+8108 or Eb Iv
+8110 adc Eb Iv
+8118 sbb Eb Iv
+8120 and Eb Iv
+8128 sub Eb Iv
+8130 xor Eb Iv
+8138 cmp Eb Iv
+82 invalid f:2
+8200 add Eb Ib
+8208 or Eb Ib
+8210 adc Eb Ib
+8218 sbb Eb Ib
+8220 and Eb Ib
+8228 sub Eb Ib
+8230 xor Eb Ib
+8238 cmp Eb Ib
 83 invalid f:2
 8300 add Ev Ib
 8308 or Ev Ib
@@ -162,20 +171,20 @@
 8a mov Gb Eb
 8b mov Gv Ev
 8c mov Ew Sw
-8d lea Gv M
+8d lea Gv
 8e mov Sw Ew
 8f pop Ev
 90 nop
-91 xchg rcx rax
-92 xchg rdx rax
-93 xchg rbx rax
-94 xchg rsp rax
-95 xchg rbp rax
-96 xchg rsi rax
-97 xchg rdi rax
+91 xchg ecx eax
+92 xchg edx eax
+93 xchg ebx eax
+94 xchg esp eax
+95 xchg ebp eax
+96 xchg esi eax
+97 xchg edi eax
 98 cbw
 99 cwd
-9a invalid
+9a call Ap
 9b wait
 9c pushf Fv
 9d popf Fv
@@ -190,7 +199,7 @@ a5 movsw Xv Yv
 a6 cmpsb Xb Yb
 a7 cmpsw Xv Yv
 a8 test al Ib
-a9 test eax Id
+a9 test eax Iv
 aa stosb Yb al
 ab stosw Yv eax
 ac lodsb al Xb
@@ -233,12 +242,10 @@ c130 sal Ev Ib
 c138 sar Ev Ib
 c2 ret Iw
 c3 ret
-c4 invalid
-c5 invalid
-c6 invext f:2
-c600 mov Eb Ib
-c7 invalid f:2
-c700 mov Ev Id
+c4 les Gv Mp
+c5 lds Gv Mp
+c6 mov Eb Ib
+c7 mov Ev Iv
 c8 enter Iw Ib
 c9 leave
 ca retf Iw
@@ -283,109 +290,17 @@ d320 shl Ev cl
 d328 shr Ev cl
 d330 sal Ev cl
 d338 sar Ev cl
-d4 invalid
-d5 invalid
-d6 invalid
+d4 aam
+d5 aad
+d6
 d7 xlat
-d8 invalid f:2
-d800 fadd M f:16
-d80003 fadd B
-d808 fmul M f:16
-d80803 fmul B
-d810 fcom B
-d8d1 fcom st1
-d818 fcomp B
-d8d9 fcomp st1
-d820 fsub M f:16
-d82003 fsub B
-d828 fsubr M f:16
-d82803 fsubr B
-d830 fdiv M f:16
-d83003 fdiv B
-d838 fdivr M f:16
-d83803 fdivr B f:16
-d9 invalid f:2
-d900 fld B
-d908 fxch B
-d9c9 fxch st1
-d910 fst M
-d9d0 fnop
-d918 fstp M
-d91803 fstp1 B
-d920  fldenv M
-d9e0 fchs
-d9e1 fabs
-d9e4 ftst
-d9e5 fxam
-d928 fldcw M
-d9e8 fld1
-d9e9 fld2t
-d9ea fldl2e
-
-da invalid f:2
-da00 fiadd M f:16
-da0003 fcmovb B
-da08 fimul M f:16
-da0803 fcmove B
-da10 ficom M f:16
-da1003 fcmovbe B
-da18 ficomp M f:16
-da1803 fcmovu B
-da20 fisub M
-da28 fisubr M
-dae8 fucompp st1
-da30 fidiv M
-da38 fidivr M
+d8
+d9
+da
 db
-dc invalid f:2
-dc00 fadd M f:16
-dc0003 fadd B
-dc08 fmul M f:16
-dc0803 fmul B
-dc10 fcom M f:16
-dc1003 fcom2 B
-dc18 fcomp M f:16
-dc1803 fcomp3 B
-dc20 fsub M f:16
-dc2003 fsubr B
-dc28 fsubr M f:16
-dc2803 fsub B
-dc30 fdiv M f:16
-dc3003 fdivr B
-dc38 fdivr N fL16
-dc3803 fdiv B
-dd invalid f:2
-dd00 fld M f:16
-dd0003 ffree B
-dd08 fisttp M f:16
-dd0803 fxch4 B
-dd10 fst M f:16
-dd1003 fsp B
-dd18 fstp M f:16
-dd2003 fstp B
-de invalid f:2
-de00 fiadd M f:16
-de0003 faddp B
-dec1 faddp st1
-de08 fimul M f:16
-de0803 fmulp B
-dec9 fmulp st1
-de10 ficom M f:16
-de1003 fcomp5 B
-de18 ficomp M f:16
-de1803 ficompp st1
-de20 fisub M f:16
-de2003 fsubrp B
-dee1 fsubrp st1
-de28 fisubr M f:16
-de2803 fsubp B
-dee9 fsubp st1
-de30 fidiv M f:16
-de3003 fdivrp B
-def1 fdivp st1
-de38 fdivr M f:16
-de3803 fdivp B
-def9 fdivp st1
+dc
+dd
+de
 df
 e0 loopne Jb
 e1 loope Jb
@@ -396,17 +311,17 @@ e5 in eaxa Ib
 e6 out Ib al
 e7 out Ib eax
 e8 call Av
-e9 jmp Jv
-ea
+e9 jnp Jv
+ea jnp Ap
 eb jmp Jb
 ec in al dx
 ed in eax dx
 ee out dx al
 ef out dx eax
-f0 lock f:4
-f1 icebp
-f2 repne f:4
-f3 repe f:4
+f0
+f1
+f2
+f3
 f4 hlt
 f5 cmc
 f6 invalid f:2
@@ -444,38 +359,24 @@ ff18 callf
 ff20 jmp Eq
 ff28 jmp Ep
 ff30 push Eq
-0f00 invalid f:2
-0f0000 sldr Ew
-0f0008 str Ew
-0f0010 lldt Ew
-0f0018 ltr Ew
-0f0020 verr Ew
-0f0028 verw Ew
-0f01 invalid f:2
-0f0100 sgdt Ms
-0f0108 sidt Ms
-0f0110 ldgt Ms
-0f0118 lidt Ms
-0f0120 smsw Ew
-0f0128 lmsw Ew
+0f00 grp6d Ew
+0f01 grp7a
 0f02 lar Gw Ew
 0f03 lsl Gv Ew
 0f04
 0f05
 0f06 ctls
 0f07
-0f08 invd
-0f09 wbinvd
-0f0b invalid
-0f0d nop Ev
-0f10 movups Vd Wd
-f30f10 movss Vq Wq
-660f10 movupd Vq Wq
-f20f10 movsd Vq Wq
-0f11 movups Wq Vq
-f30f11 movss Wq Vq
-660f11 movupd Wq Vq
-f20f11 movsd Wq Vq
+0f08
+0f09
+0f0a
+0f0b
+0f0c
+0f0d
+0f0e
+0f0f
+0f10
+0f11
 0f12
 0f13
 0f14
@@ -489,15 +390,7 @@ f20f11 movsd Wq Vq
 0f1c
 0f1d
 0f1e
-0f1f grp9 f:2
-0f1f00 nop Ev
-0f1f08 nop Ev
-0f1f10 nop Ev
-0f1f18 nop Ev
-0f1f20 nop Ev
-0f1f28 nop Ev
-0f1f30 nop Ev
-0f1f38 nop Ev
+0f1f
 0f20 mov Rd Cd
 0f21 mov Rd Dd
 0f22 mov Cd Rd
@@ -508,9 +401,9 @@ f20f11 movsd Wq Vq
 0f27
 0f28
 0f29
-0f2a cvt
+0f2a
 0f2b
-0f2c cvtt
+0f2c
 0f2d
 0f2e
 0f2f
@@ -530,22 +423,22 @@ f20f11 movsd Wq Vq
 0f3d
 0f3e
 0f3f
-0f40 cmovo Gv Ev
-0f41 cmovno Gv Ev
-0f42 cmovb Gv Ev
-0f43 cmovnb Gv Ev
-0f44 cmovz Gv Ev
-0f45 cmovnz Gv Ev
-0f46 cmovbe Gv Ev
-0f47 cmova Gv Ev
-0f48 cmovs Gv Ev
-0f49 cmovns Gv Ev
-0f4a cmovp Gv Ev
-0f4b cmovnp Gv Ev
-0f4c cmovl Gv Ev
-0f4d cmovge Gv Ev
-0f4e cmovng Gv Ev
-0f4f cmovg Gv Ev
+0f40
+0f41
+0f42
+0f43
+0f44
+0f45
+0f46
+0f47
+0f48
+0f49
+0f4a
+0f4b
+0f4c
+0f4d
+0f4e
+0f4f
 0f50
 0f51
 0f52
@@ -554,25 +447,13 @@ f20f11 movsd Wq Vq
 0f55
 0f56
 0f57
-0f58 addps Vq Wq
-f30f58 addss Vq Wq
-660f58 addpd Vq Wq
-f20f58 addsd Vq Wq
-0f59 mulps Vd Wd
-f30f59 mulss Vq Wq
-660f59 mulpd Vq Wq
-f20f59 mulsd Vq Wq
-0f5a cvtps2pd Vd Wd
-660f5a cvtpd2ps Vq Wq
-f30f5a cvtss2sd Vq Wq
-f20f5a cvtsd2ss Vq Wq
+0f58
+0f59
+0f5a
 0f5b
 0f5c
 0f5d
-0f5e divps Vq Wq
-f30f5e divss Vq Wq
-660f5e divpd Vq Wq
-f20f5e divsd Vq Wq
+0f5e
 0f5f
 0f60
 0f61
@@ -717,8 +598,7 @@ f20f5e divsd Vq Wq
 0fec
 0fed
 0fee
-0fef pxor Pq Qq
-660fef pxor Vq Wq
+0fef
 0ff0
 0ff1
 0ff2
@@ -727,17 +607,11 @@ f20f5e divsd Vq Wq
 0ff5
 0ff6
 0ff7
-0ff8 psubb Pq Qq
-660ff8 psubb Vq Wq
-0ff9 psubw Pq Qq
-660ff9 psubw Vq Wq
-0ffa psubd Pq Qq
-660ffa psubd Vq Wq
-0ffb psubq Pq Qq
-660ffb psubq Vq Wq
-0ffc paddb Pq Qq
-660ffc paddb Vq Wq
-0ffd paddw Pq Qq
-660ffd paddw Vq Wq
-0ffe paddd Pq Qq
-660ffe paddd Vq Wq
+0ff8
+0ff9
+0ffa
+0ffb
+0ffc
+0ffd
+0ffe
+0fff
