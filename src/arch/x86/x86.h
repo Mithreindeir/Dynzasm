@@ -1,11 +1,11 @@
 #ifndef X86_H
 #define X86_H
 
+#include <stdint.h>
 #include "../../dis.h"
 #include "../../common/trie.h"
 #include "x86strings.h"
 #include "x86load.h"
-#include <stdint.h>
 
 /*Disassembler Mode*/
 #define MODE_X64 2
