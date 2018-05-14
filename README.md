@@ -7,6 +7,8 @@ Interactive Disassembly Library WIP
 Currently supports x86/x86_64/MIPS disassembling.
 
 ```C
+#include "disas.h"
+
 int main()
 {
 	
