@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include "arch/x86/x86load.h"
 #include "arch/x86/x86.h"
+#include "arch/mips/mload.h"
+#include "arch/mips/mips.h"
 #include "dis.h"
 #include "common/trie.h"
 
@@ -14,6 +16,7 @@
        for (int i = 0; i < ds->num_instr && (cur=ds->instr[i]); i++)
 
 #define X86_ARCH 1
+#define MIPS_ARCH 2
 
 #ifndef MODE_64B
 #define MODE_64B MODE_X64

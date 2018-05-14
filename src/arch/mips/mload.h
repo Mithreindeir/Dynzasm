@@ -1,5 +1,5 @@
 #ifndef MIPS_LOAD_H
-#define MIPS_LOAH_H
+#define MIPS_LOAD_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +8,12 @@
 #include "../../common/trie.h"
 
 #define MAX_MNEM_SIZE_MIPS 12
+#ifndef MODE_32B
+#define MODE_32B 1
+#endif
+#ifndef MODE_64B
+#define MODE_64B 2
+#endif
 
 /*MIPS Instruction Entry*/
 struct mips_instr_entry {

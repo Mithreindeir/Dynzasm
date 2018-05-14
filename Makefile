@@ -1,6 +1,6 @@
 CC = gcc
 EXE = dis
-SOURCES = $(wildcard src/*.c src/arch/*.c src/arch/x86/*.c src/common/*.c)
+SOURCES = $(wildcard src/*.c src/arch/*.c src/arch/mips/*.c src/arch/x86/*.c src/common/*.c)
 OBJS = $(SOURCES:.c=.o)
 UNAME_S := $(shell uname -s)
 

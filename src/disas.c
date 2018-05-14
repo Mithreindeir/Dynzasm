@@ -7,9 +7,11 @@ struct disassembler *ds_init(int arch, int mode)
 	ds->arch = arch, ds->mode = mode;;
 	ds->root = NULL;
 	ds->instr = NULL, ds->num_instr = 0;
+	ds->root = trie_init(0, NULL);
 	if (arch == X86_ARCH) {
-		ds->root = trie_init(0, NULL);
 		x86_parse(ds->root, mode);
+	} else if (arch == MIPS_ARCH) {
+		mips_parse(ds->root, mode);
 	}
 
 	return ds;
@@ -37,6 +39,21 @@ void ds_decode(struct disassembler *ds, unsigned char *stream, int size, uint64_
 			int used_bytes = 0;
 
 			struct dis *disas = x86_disassemble(ds->mode, ds->root, stream+iter, size-iter, addr, &used_bytes);
+			iter += used_bytes;
+			addr += used_bytes;
+			if (!disas) continue;
+
+			disas->address = addr-used_bytes;
+			dis_squash(disas);
+			ds_addinstr(ds, disas);
+		}
+	} else if (ds->arch == MIPS_ARCH) {
+		int iter = 0;
+		int addr = entry;
+		while (iter < size) {
+			int used_bytes = 0;
+
+			struct dis *disas = mips_disassemble(ds->mode, ds->root, stream+iter, size-iter, addr, &used_bytes);
 			iter += used_bytes;
 			addr += used_bytes;
 			if (!disas) continue;

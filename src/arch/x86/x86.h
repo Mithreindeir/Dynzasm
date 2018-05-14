@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "../../dis.h"
 #include "../../common/trie.h"
+#include "../../common/type.h"
 #include "x86strings.h"
 #include "x86load.h"
 
@@ -41,8 +42,6 @@
 #define MODRM_DISPONLY(mod, rm) ((mod==0) && (rm == 5))
 #define SIB_NO_BASE(mod, base) 	(base==5 && (mod != 3))
 #define SIB_NO_INDEX(idx) 	(idx==4)
-
-typedef unsigned char u8;
 
 struct dis *x86_disassemble(int mode, struct trie_node *node, u8 *stream, long max, uint64_t addr, int *used_bytes);
 long x86_decode_operand(struct operand_tree **opt, int mode, char *operand, u8 flags, u8 *stream, long max);
