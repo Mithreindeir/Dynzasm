@@ -4,6 +4,7 @@ void mips_parse(struct trie_node *root, int mode)
 {
 	FILE *fp = NULL;
 	fp = fopen("src/arch/mips/mips.ins", "r");
+	(void)mode;/*32 and 64 mode have the same file, so mode isnt needed*/
 	if (!fp) {
 		printf("Error opening mips instruction file\n");
 		return;

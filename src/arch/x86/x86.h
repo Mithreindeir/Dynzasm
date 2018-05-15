@@ -4,16 +4,13 @@
 #include <stdint.h>
 #include "../../dis.h"
 #include "../../common/trie.h"
-#include "../../common/type.h"
+#include "../../common/common.h"
 #include "x86strings.h"
 #include "x86load.h"
 
 /*Disassembler Mode*/
 #define MODE_X64 2
 #define MODE_X86 1
-
-/*Macro to check a bit for a flag*/
-#define CHECK_FLAG(byte, flag) (!!(byte & flag))
 
 /*Trie Node Flags*/
 #define REG_EXT_FLAG 		2

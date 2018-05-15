@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "common/db.h"
+#include "common/common.h"
 
 #define DIS_ADDR 	3
 #define DIS_REG 	2

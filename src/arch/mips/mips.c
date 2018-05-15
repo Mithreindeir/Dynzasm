@@ -13,8 +13,13 @@ struct dis *mips_disassemble(int mode, struct trie_node *node, u8 *stream, long 
 
 	unsigned char opcode = OPCODE(instruction);
 	struct trie_node *n = trie_lookup(node, &opcode, 1);
+	/*Floating point instructions may have the rs field as an opcode extension*/
+	if (CHECK_FLAG(n->flags, INSTR_RSEXT)) {
+		opcode = RS(instruction);
+		n = trie_lookup(n, &opcode, 1);
+	}
 	/*Some instructions have a func field that specifies the mnemonic*/
-	if (n->flags & INSTR_FUNC) {
+	if (CHECK_FLAG(n->flags, INSTR_FUNC)) {
 		opcode = FUNC(instruction);
 		n = trie_lookup(n, &opcode, 1);
 	}
@@ -27,19 +32,24 @@ struct dis *mips_disassemble(int mode, struct trie_node *node, u8 *stream, long 
 	struct dis *disas = dis_init();
 
 	memcpy(disas->mnemonic, e->mnemonic, strlen(e->mnemonic));
-	mips_decode_operands(disas, e, instruction);
+	mips_decode_operands(disas, e, instruction, n->flags);
 
 	return disas;
 }
 
-void mips_decode_operands(struct dis *disas, struct mips_instr_entry *e, uint32_t instruction)
+void mips_decode_operands(struct dis *disas, struct mips_instr_entry *e, uint32_t instruction, u8 flags)
 {
 	switch (e->instr_type) {
+		/*Register Type*/
 		case 'R':
-			dis_add_operand(disas, operand_reg(mips_registers[RD(instruction)]));
-			dis_add_operand(disas, operand_reg(mips_registers[RS(instruction)]));
-			dis_add_operand(disas, operand_reg(mips_registers[RT(instruction)]));
+			if (!CHECK_FLAG(flags, INSTR_NORS))
+				dis_add_operand(disas, operand_reg(mips_registers[RD(instruction)]));
+			if (!CHECK_FLAG(flags, INSTR_NORT))
+				dis_add_operand(disas, operand_reg(mips_registers[RS(instruction)]));
+			if (!CHECK_FLAG(flags, INSTR_NORD))
+				dis_add_operand(disas, operand_reg(mips_registers[RT(instruction)]));
 			break;
+		/*Immediate Type*/
 		case 'I':
 			/*Store and Load Instruction have a different disassembly format*/
 			if (e->mnemonic[0]=='s' || e->mnemonic[0]=='l') {
@@ -55,8 +65,17 @@ void mips_decode_operands(struct dis *disas, struct mips_instr_entry *e, uint32_
 				dis_add_operand(disas, operand_imm((int64_t)(int16_t)IMM(instruction)));
 			}
 			break;
+		/*Jump type*/
 		case 'J':
 			dis_add_operand(disas, operand_addr(ADDR(instruction)));
+			break;
+		/*Floating point type*/
+		case 'F':
+			dis_add_operand(disas, operand_reg(mips_fp_registers[SHAMT(instruction)]));
+			if (!CHECK_FLAG(flags, INSTR_NORD))
+				dis_add_operand(disas, operand_reg(mips_fp_registers[RD(instruction)]));
+			if (!CHECK_FLAG(flags, INSTR_NORT))
+				dis_add_operand(disas, operand_reg(mips_fp_registers[RT(instruction)]));
 			break;
 	}
 }

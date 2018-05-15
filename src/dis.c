@@ -185,7 +185,10 @@ int operand_squash(char *buf, long max, struct operand_tree *tree)
 		if (tree->body.operand.operand_type == DIS_ADDR) {
 			iter+=snprintf(buf+iter,max-iter,"%#lx", TREE_ADDR(tree));
 		} else if (tree->body.operand.operand_type == DIS_IMM) {
-			iter+=snprintf(buf+iter,max-iter,"%#lx", TREE_IMM(tree));
+			int sign = SIGNED(TREE_IMM(tree));
+			if (sign)
+				iter+=snprintf(buf+iter,max-iter,"-");
+			iter+=snprintf(buf+iter,max-iter,"%#lx", SIGN(TREE_IMM(tree)));
 		} else if (tree->body.operand.operand_type == DIS_REG) {
 			iter+=snprintf(buf+iter,max-iter,"%s", TREE_REG(tree));
 		}
