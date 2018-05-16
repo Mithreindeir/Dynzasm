@@ -1,22 +1,32 @@
 # Dynzasm
 
-[![Build Status](https://travis-ci.org/Mithreindeir/Dynzasm.svg?branch=master)](https://travis-ci.org/Mithreindeir/Dynzasm)
+| | |
+|----------|--------------------------------|
+|**TRAVIS**|[![Build Status](https://travis-ci.org/Mithreindeir/Dynzasm.svg?branch=master)](https://travis-ci.org/Mithreindeir/Dynzasm)|
+|**Coverity**|[![Coverity Scan Build Status](https://scan.coverity.com/projects/15646/badge.svg)](https://scan.coverity.com/projects/mithreindeir-dynzasm)|
+|CodeCov||
+Interactive Disassembly Library WIP
 
-Interactive Disassembly Library.
+Currently supports x86/x86_64/MIPS disassembling.
 
-Instruction represented are trees that can be "squashed" into strings
-allowing arbitrary formatting rules to rewrite the disassembly, while also providing implicit information about all used registers, immediate values, and addresses used by the instruction.
+```C
+#include "disas.h"
 
-Currently an x86 disassembler is being developed but aiming to be architecture independent.
+int main()
+{
+	
+  struct disassembler *ds = ds_init(X86_ARCH, MODE_64B);
+  unsigned char bytes[] =  "\x55\x48\x89\xe5\xb8\x00\x00\x00\x00\xc3";
 
-Trie structure for holding instruction sets.
+  ds_decode(ds, bytes, sizeof(bytes)-1, 0x0);
+  struct dis *dis = NULL;
+  
+  DS_FOREACH(ds, dis) {
+    printf("%#08lx:\t%s\t%s\n", dis->address, dis->mnemonic, dis->op_squash);
+  }
+  
+  ds_destroy(ds);
+  return 0;
+}
 
-Will eventually have builtin formatting engine allowing any tree structure to be rewritten as anything (eg: dword [ebp-0x4] can be rewritten as var4.d).
-
-Current progress:
-
-* X86 disassembler supports most instructions
-* Trie Structure
-* Supports loading instructions from file into trie, with flag operations
-* Disassemble from stdin
-
+```

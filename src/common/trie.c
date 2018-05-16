@@ -94,11 +94,9 @@ void trie_node_insert(struct trie_node *node, struct trie_node *child)
 		node->children=malloc(sizeof(struct trie_node*));
 	else
 		node->children=realloc(node->children,sizeof(struct trie_node*)*node->num_children);
-	if (node->num_children == 1 || idx==(node->num_children-1)) {
-		node->children[idx] = child;
-	} else {
+	if (node->num_children > 1 && idx < (node->num_children-1)) {
 		long size = (node->num_children-(idx+1)) * sizeof(struct trie_node *);
 		memmove(node->children+idx+1,node->children+idx, size);
-		node->children[idx] = child;
 	}
+	node->children[idx] = child;
 }
