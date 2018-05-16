@@ -5,6 +5,7 @@
 |**TRAVIS**|[![Build Status](https://travis-ci.org/Mithreindeir/Dynzasm.svg?branch=master)](https://travis-ci.org/Mithreindeir/Dynzasm)|
 |**Coverity**|[![Coverity Scan Build Status](https://scan.coverity.com/projects/15646/badge.svg)](https://scan.coverity.com/projects/mithreindeir-dynzasm)|
 |CodeCov||
+
 Interactive Disassembly Library WIP
 
 Currently supports x86/x86_64/MIPS disassembling.
