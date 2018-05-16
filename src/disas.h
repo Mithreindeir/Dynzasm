@@ -9,6 +9,8 @@
 #include "arch/x86/x86.h"
 #include "arch/mips/mload.h"
 #include "arch/mips/mips.h"
+#include "arch/arm/aload.h"
+#include "arch/arm/arm.h"
 #include "dis.h"
 #include "common/trie.h"
 
@@ -17,6 +19,7 @@
 
 #define X86_ARCH 1
 #define MIPS_ARCH 2
+#define ARM_ARCH 3
 
 #ifndef MODE_64B
 #define MODE_64B MODE_X64

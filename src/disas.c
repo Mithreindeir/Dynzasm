@@ -12,6 +12,8 @@ struct disassembler *ds_init(int arch, int mode)
 		x86_parse(ds->root, mode);
 	} else if (arch == MIPS_ARCH) {
 		mips_parse(ds->root, mode);
+	} else if (arch == ARM_ARCH) {
+		arm_parse(ds->root, mode);
 	}
 
 	return ds;
@@ -54,6 +56,21 @@ void ds_decode(struct disassembler *ds, unsigned char *stream, int size, uint64_
 			int used_bytes = 0;
 
 			struct dis *disas = mips_disassemble(ds->mode, ds->root, stream+iter, size-iter, addr, &used_bytes);
+			iter += used_bytes;
+			addr += used_bytes;
+			if (!disas) continue;
+
+			disas->address = addr-used_bytes;
+			dis_squash(disas);
+			ds_addinstr(ds, disas);
+		}
+	} else if (ds->arch == ARM_ARCH) {
+		int iter = 0;
+		int addr = entry;
+		while (iter < size) {
+			int used_bytes = 0;
+
+			struct dis *disas = arm_disassemble(ds->mode, ds->root, stream+iter, size-iter, addr, &used_bytes);
 			iter += used_bytes;
 			addr += used_bytes;
 			if (!disas) continue;

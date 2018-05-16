@@ -19,3 +19,4 @@ addons:
     build_command: "make"
     branch_pattern: coverity_scan
 script: make
+after_success: bash < (curl -s https://codecov.io/bash)
