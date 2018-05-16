@@ -1,14 +1,16 @@
 #ifndef X86_H
 #define X86_H
 
+#include <stdint.h>
 #include "../../dis.h"
 #include "../../common/trie.h"
+#include "../../common/common.h"
 #include "x86strings.h"
 #include "x86load.h"
-#include <stdint.h>
 
-/*Macro to check a bit for a flag*/
-#define CHECK_FLAG(byte, flag) (!!(byte & flag))
+/*Disassembler Mode*/
+#define MODE_X64 2
+#define MODE_X86 1
 
 /*Trie Node Flags*/
 #define REG_EXT_FLAG 		2
@@ -25,8 +27,8 @@
 #define REX_W 			32 //100000
 
 /*Defaults*/
-#define DEF_OPER_SIZE 		3
-#define DEF_ADDR_SIZE 		4
+#define DEF_OPER_SIZE(mode) 	(mode == MODE_X64 ? 3 : 3)
+#define DEF_ADDR_SIZE(mode) 	(mode == MODE_X64 ? 4 : 3)
 
 /*Encoding constants*/
 #define SIB_RM 			4
@@ -38,11 +40,9 @@
 #define SIB_NO_BASE(mod, base) 	(base==5 && (mod != 3))
 #define SIB_NO_INDEX(idx) 	(idx==4)
 
-typedef unsigned char u8;
-
-long x86_disassemble(struct trie_node *node, u8 *stream, long max, struct dis *disas);
-long x86_decode_operand(struct operand_tree **opt, char *operand, u8 flags, u8 *stream, long max);
-int x86_operand_size(int op_size, char size_byte, u8 flags);
+struct dis *x86_disassemble(int mode, struct trie_node *node, u8 *stream, long max, uint64_t addr, int *used_bytes);
+long x86_decode_operand(struct operand_tree **opt, int mode, char *operand, u8 flags, u8 *stream, long max);
+int x86_operand_size(int mode, int op_size, char size_byte, u8 flags);
 long x86_decode_modrm(struct operand_tree **operand, int op_size, int addr_size, u8 *stream, long max, u8 flags);
 long x86_decode_sib(struct operand_tree **operand, int op_size, int addr_size, u8 *stream, long max, u8 flags);
 long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode, int op_size, int addr_size, u8 *stream, long max, u8 flags);

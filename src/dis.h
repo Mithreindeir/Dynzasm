@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include "common/db.h"
+#include "common/common.h"
 
 #define DIS_ADDR 	3
 #define DIS_REG 	2
@@ -20,6 +23,8 @@
 #define FMT_SIZE 	32
 
 //Macros for easy tree access
+#define TREE_TYPE(t) (t->type)
+#define TREE_OPTYPE(t) (t->body.operand.operand_type)
 #define TREE_REG(t) (t->body.operand.operand_val.reg)
 #define TREE_ADDR(t) (t->body.operand.operand_val.addr)
 #define TREE_IMM(t) (t->body.operand.operand_val.imm)
@@ -59,20 +64,25 @@ struct dis {
 	unsigned int id;
 	unsigned int group[10];
 	char mnemonic[MNEM_SIZE];
-	char squashed[128];
+	char op_squash[SQUASH_SIZE];
+	uint64_t address;
 };
 
 
-void dis_init(struct dis *dis);
+struct dis *dis_init();
+void dis_destroy(struct dis *disasm);
 void dis_add_operand(struct dis *dis, struct operand_tree *tree);
-void operand_tree_init(struct operand_tree *tree, int type);
-void operand_tree_add(struct operand_tree *node, struct operand_tree *child);
-void operand_tree_free(struct operand_tree *node);
-/*Convenience initializers for operands*/
-void operand_reg(struct operand_tree *tree, const char *reg);
-void operand_imm(struct operand_tree *tree, const unsigned long imm);
-void operand_addr(struct operand_tree *tree, const unsigned long addr);
+void dis_squash(struct dis *dis);
 
+struct operand_tree *operand_tree_init(int type);
+void operand_tree_destroy(struct operand_tree *node);
+void operand_tree_add(struct operand_tree *node, struct operand_tree *child);
+/*Convenience initializers for operands*/
+struct operand_tree *operand_reg(const char *reg);
+struct operand_tree *operand_imm(const unsigned long imm);
+struct operand_tree *operand_addr(const unsigned long addr);
+
+int operand_squash_replace(char *buf, long max, struct operand_tree *tree, struct db_node *root);
 int operand_squash(char *buf, long max, struct operand_tree *tree);
 
 #endif
