@@ -28,12 +28,15 @@ struct trie_node *trie_init(unsigned char key, void *value);
 void trie_destroy(struct trie_node *node);
 
 //Creates path and inserts a value.
-void trie_insert(struct trie_node *root, unsigned char *stream, long max, void *value, unsigned char flags);
+void trie_insert(struct trie_node *root, unsigned char *stream, long max,
+		 void *value, unsigned char flags);
 //Returns the leaf node or branch if there is a lookup conflict
-struct trie_node *trie_lookup(struct trie_node *root, unsigned char *stream, long max);
+struct trie_node *trie_lookup(struct trie_node *root,
+			      unsigned char *stream, long max);
 //Insertion sort trie nodes
 void trie_node_insert(struct trie_node *node, struct trie_node *child);
 //Search on a sorted trie node
-struct trie_node *trie_node_search(struct trie_node *node, unsigned char key);
+struct trie_node *trie_node_search(struct trie_node *node,
+				   unsigned char key);
 
 #endif

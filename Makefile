@@ -2,7 +2,6 @@ CC = gcc
 EXE = dis
 SOURCES = $(wildcard src/*.c src/arch/*.c src/arch/arm/*.c src/arch/mips/*.c src/arch/x86/*.c src/common/*.c)
 OBJS = $(SOURCES:.c=.o)
-COV =  $(SOURCES:.c=.gcno)
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S), Linux) #LINUX
@@ -12,13 +11,13 @@ ifeq ($(UNAME_S), Linux) #LINUX
 endif
 
 .c.o:
-	$(CC) -coverage $(CXXFLAGS) -c -o $@ $<
+	$(CC) $(CXXFLAGS) -c -o $@ $<
 
 all: $(EXE)
 	@echo Build complete for $(ECHO_MESSAGE)
 
 $(EXE): $(OBJS)
-	$(CC) -coverage -o $(EXE) $(OBJS) $(CXXFLAGS) $(LIBS)
+	$(CC) -o $(EXE) $(OBJS) $(CXXFLAGS) $(LIBS)
 
 clean:
-	rm $(EXE) $(OBJS) $(COV)
+	rm $(EXE) $(OBJS)

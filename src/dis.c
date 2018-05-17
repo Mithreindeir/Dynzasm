@@ -17,7 +17,8 @@ struct dis *dis_init()
 
 void dis_destroy(struct dis *disasm)
 {
-	if (!disasm) return;
+	if (!disasm)
+		return;
 
 	for (int i = 0; i < disasm->num_operands; i++) {
 		operand_tree_destroy(disasm->operands[i]);
@@ -29,13 +30,17 @@ void dis_destroy(struct dis *disasm)
 
 void dis_add_operand(struct dis *dis, struct operand_tree *tree)
 {
-	if (!dis) return;
+	if (!dis)
+		return;
 	dis->num_operands++;
 	if (!dis->operands)
-		dis->operands = malloc(sizeof(struct operand_tree*));
+		dis->operands = malloc(sizeof(struct operand_tree *));
 	else
-		dis->operands = realloc(dis->operands, sizeof(struct operand_tree*)*dis->num_operands);
-	dis->operands[dis->num_operands-1] = tree;
+		dis->operands =
+		    realloc(dis->operands,
+			    sizeof(struct operand_tree *) *
+			    dis->num_operands);
+	dis->operands[dis->num_operands - 1] = tree;
 }
 
 struct operand_tree *operand_tree_init(int type)
@@ -58,7 +63,8 @@ struct operand_tree *operand_tree_init(int type)
 
 void operand_tree_destroy(struct operand_tree *node)
 {
-	if (!node) return;
+	if (!node)
+		return;
 
 	if (node->type == DIS_BRANCH) {
 		for (int i = 0; i < TREE_NCHILD(node); i++) {
@@ -69,15 +75,21 @@ void operand_tree_destroy(struct operand_tree *node)
 	free(node);
 }
 
-void operand_tree_add(struct operand_tree *node, struct operand_tree *child)
+void operand_tree_add(struct operand_tree *node,
+		      struct operand_tree *child)
 {
-	if (!node || node->type != DIS_BRANCH) return;
+	if (!node || node->type != DIS_BRANCH)
+		return;
 	TREE_NCHILD(node)++;
 	if (!node->body.op_tree.operands)
-		node->body.op_tree.operands=malloc(sizeof(struct operand_tree*));
+		node->body.op_tree.operands =
+		    malloc(sizeof(struct operand_tree *));
 	else
-		node->body.op_tree.operands=realloc(node->body.op_tree.operands,sizeof(struct operand_tree*)*TREE_NCHILD(node));
-	TREE_CHILD(node, TREE_NCHILD(node)-1) = child;
+		node->body.op_tree.operands =
+		    realloc(node->body.op_tree.operands,
+			    sizeof(struct operand_tree *) *
+			    TREE_NCHILD(node));
+	TREE_CHILD(node, TREE_NCHILD(node) - 1) = child;
 }
 
 struct operand_tree *operand_reg(const char *reg)
@@ -85,9 +97,10 @@ struct operand_tree *operand_reg(const char *reg)
 	struct operand_tree *tree = operand_tree_init(DIS_OPER);
 
 	tree->body.operand.operand_type = DIS_REG;
-	if (!reg) return tree;
+	if (!reg)
+		return tree;
 	long len = strlen(reg);
-	len = len >= REG_SIZE ? (REG_SIZE-2) : len;
+	len = len >= REG_SIZE ? (REG_SIZE - 2) : len;
 	memcpy(TREE_REG(tree), reg, len);
 	TREE_REG(tree)[len] = 0;
 
@@ -118,104 +131,80 @@ void dis_squash(struct dis *dis)
 {
 	int iter = 0;
 	for (int i = 0; i < dis->num_operands; i++) {
-		iter += operand_squash(dis->op_squash+iter, SQUASH_SIZE-iter, dis->operands[i]);
-		if ((i+1) < dis->num_operands)
-			iter += snprintf(dis->op_squash+iter, SQUASH_SIZE-iter, ", ");
+		iter +=
+		    operand_squash(dis->op_squash + iter,
+				   SQUASH_SIZE - iter, dis->operands[i]);
+		if ((i + 1) < dis->num_operands)
+			iter +=
+			    snprintf(dis->op_squash + iter,
+				     SQUASH_SIZE - iter, ", ");
 	}
-}
-
-int operand_squash_replace(char *buf, long max, struct operand_tree *tree, struct db_node *root)
-{
-	if (!tree) return 0;
-
-	long iter = 0;
-	if (tree->type == DIS_OPER) {
-		if (tree->body.operand.operand_type == DIS_ADDR) {
-			iter+=snprintf(buf+iter,max-iter,"%#lx", TREE_ADDR(tree));
-		} else if (tree->body.operand.operand_type == DIS_IMM) {
-			iter+=snprintf(buf+iter,max-iter,"%#lx", TREE_IMM(tree));
-		} else if (tree->body.operand.operand_type == DIS_REG) {
-			iter+=snprintf(buf+iter,max-iter,"%s", TREE_REG(tree));
-		}
-	} else if (tree->type == DIS_BRANCH) {
-		if (!TREE_FORMAT(tree)) {
-			for (int i = 0; i < TREE_NCHILD(tree); i++) {
-				iter+=operand_squash_replace(buf+iter, max-iter, TREE_CHILD(tree,i), root);
-			}
-			return iter;
-		}
-		char *format = TREE_FORMAT(tree);
-		int flen = strlen(format), flast = 0;
-		for (int i = 0; i < flen; i++) {
-			if (format[i]=='$') {
-				if (i-flast) {
-					iter += snprintf(buf+iter, max-iter, "%*.*s", i-flast,i-flast,format+flast);
-				}
-				int num = (i+1)<flen ? (signed int) format[i+1]-0x30 : -1;
-				if (num >= 0 && num < 10 && num < TREE_NCHILD(tree)) {
-					iter += operand_squash_replace(buf+iter, max-iter, TREE_CHILD(tree, num), root);
-				}
-				i++;
-				flast = i+1;
-				continue;
-			}
-			if ((i+1)==flen)
-				iter += snprintf(buf+iter, max-iter, "%s", format+flast);
-		}
-	}
-	struct db_key k;
-	char kbuf[32];
-	memset(kbuf, 0, 32);
-	memcpy(kbuf, buf, max > 32 ? 32 : max);
-	k.key = kbuf;
-	k.ksize = strlen(kbuf);
-	char *val = db_lookup_value(root, k);
-	if (val) {
-		iter = snprintf(buf, max, "%s", val);
-	}
-	return iter;
 }
 
 int operand_squash(char *buf, long max, struct operand_tree *tree)
 {
-	if (!tree) return 0;
+	if (!tree)
+		return 0;
 
 	long iter = 0;
 	if (tree->type == DIS_OPER) {
 		if (tree->body.operand.operand_type == DIS_ADDR) {
-			iter+=snprintf(buf+iter,max-iter,"%#lx", TREE_ADDR(tree));
+			iter +=
+			    snprintf(buf + iter, max - iter, "%#lx",
+				     TREE_ADDR(tree));
 		} else if (tree->body.operand.operand_type == DIS_IMM) {
 			int sign = SIGNED(TREE_IMM(tree));
 			if (sign)
-				iter+=snprintf(buf+iter,max-iter,"-");
-			iter+=snprintf(buf+iter,max-iter,"%#lx", SIGN(TREE_IMM(tree)));
+				iter +=
+				    snprintf(buf + iter, max - iter, "-");
+			iter +=
+			    snprintf(buf + iter, max - iter, "%#lx",
+				     SIGN(TREE_IMM(tree)));
 		} else if (tree->body.operand.operand_type == DIS_REG) {
-			iter+=snprintf(buf+iter,max-iter,"%s", TREE_REG(tree));
+			iter +=
+			    snprintf(buf + iter, max - iter, "%s",
+				     TREE_REG(tree));
 		}
 	} else if (tree->type == DIS_BRANCH) {
 		if (!TREE_FORMAT(tree)) {
 			for (int i = 0; i < TREE_NCHILD(tree); i++) {
-				iter+=operand_squash(buf+iter, max-iter, TREE_CHILD(tree,i));
+				iter +=
+				    operand_squash(buf + iter, max - iter,
+						   TREE_CHILD(tree, i));
 			}
 			return iter;
 		}
 		char *format = TREE_FORMAT(tree);
 		int flen = strlen(format), flast = 0;
 		for (int i = 0; i < flen; i++) {
-			if (format[i]=='$') {
-				if (i-flast) {
-					iter += snprintf(buf+iter, max-iter, "%*.*s", i-flast,i-flast,format+flast);
+			if (format[i] == '$') {
+				if (i - flast) {
+					iter +=
+					    snprintf(buf + iter,
+						     max - iter, "%*.*s",
+						     i - flast, i - flast,
+						     format + flast);
 				}
-				int num = (i+1)<flen ? (signed int) format[i+1]-0x30 : -1;
-				if (num >= 0 && num < 10 && num < TREE_NCHILD(tree)) {
-					iter += operand_squash(buf+iter, max-iter, TREE_CHILD(tree, num));
+				int num =
+				    (i + 1) <
+				    flen ? (signed int) format[i + 1] -
+				    0x30 : -1;
+				if (num >= 0 && num < 10
+				    && num < TREE_NCHILD(tree)) {
+					iter +=
+					    operand_squash(buf + iter,
+							   max - iter,
+							   TREE_CHILD(tree,
+								      num));
 				}
 				i++;
-				flast = i+1;
+				flast = i + 1;
 				continue;
 			}
-			if ((i+1)==flen)
-				iter += snprintf(buf+iter, max-iter, "%s", format+flast);
+			if ((i + 1) == flen)
+				iter +=
+				    snprintf(buf + iter, max - iter, "%s",
+					     format + flast);
 		}
 	}
 	return iter;

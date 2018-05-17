@@ -32,7 +32,9 @@
 #define ADDR(instr) ((instr&0x03ffffff))
 #define IMM(instr) (instr&0x0ffff)
 
-struct dis *mips_disassemble(int mode, struct trie_node *node, u8 *stream, long max, uint64_t addr, int *used_bytes);
-void mips_decode_operands(struct dis *disas, struct mips_instr_entry *e, uint32_t instruction, u8 flags);
+struct dis *mips_disassemble(int mode, struct trie_node *node, u8 * stream,
+			     long max, uint64_t addr, int *used_bytes);
+void mips_decode_operands(struct dis *disas, struct mips_instr_entry *e,
+			  uint32_t instruction, u8 flags);
 
 #endif

@@ -6,6 +6,6 @@
 #include <string.h>
 
 long ascii_to_hex(unsigned char *out, char *in, long len);
-int get_line(FILE *f, char *buf, long max);
+int get_line(FILE * f, char *buf, long max);
 
 #endif

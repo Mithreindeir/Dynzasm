@@ -40,7 +40,8 @@ struct disassembler {
 
 struct disassembler *ds_init(int isa, int mode);
 
-void ds_decode(struct disassembler *ds, unsigned char *stream, int size, uint64_t entry);
+void ds_decode(struct disassembler *ds, unsigned char *stream, int size,
+	       uint64_t entry);
 void ds_addinstr(struct disassembler *ds, struct dis *dis);
 
 void ds_destroy(struct disassembler *ds);

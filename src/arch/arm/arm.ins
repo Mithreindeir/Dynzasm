@@ -1,6 +1,5 @@
-00 invalid f:1
-01 invalid f:1
-
+00 invalid NA f:1
+01 invalid NA f:1
 0000 and D
 0001 eor D
 0002 sub D
@@ -14,9 +13,9 @@
 000a cmp D
 000b cmn D
 000c irr D
-000d mov D
+000d mov D f:2
 000e bic D
-000f mvn D
+000f mvn D f:2
 0100 and I
 0101 eor I
 0102 sub I
@@ -33,8 +32,5 @@
 010d mov I
 010e bic I
 010f mvn I
-
-02
-03
-04 load
-05 branch
+04 load L
+05 b B

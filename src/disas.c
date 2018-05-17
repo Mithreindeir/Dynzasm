@@ -21,7 +21,8 @@ struct disassembler *ds_init(int arch, int mode)
 
 void ds_destroy(struct disassembler *ds)
 {
-	if (!ds) return;
+	if (!ds)
+		return;
 
 	for (int i = 0; i < ds->num_instr; i++) {
 		dis_destroy(ds->instr[i]);
@@ -32,7 +33,8 @@ void ds_destroy(struct disassembler *ds)
 	free(ds);
 }
 
-void ds_decode(struct disassembler *ds, unsigned char *stream, int size, uint64_t entry)
+void ds_decode(struct disassembler *ds, unsigned char *stream, int size,
+	       uint64_t entry)
 {
 	if (ds->arch == X86_ARCH) {
 		int iter = 0;
@@ -40,12 +42,16 @@ void ds_decode(struct disassembler *ds, unsigned char *stream, int size, uint64_
 		while (iter < size) {
 			int used_bytes = 0;
 
-			struct dis *disas = x86_disassemble(ds->mode, ds->root, stream+iter, size-iter, addr, &used_bytes);
+			struct dis *disas =
+			    x86_disassemble(ds->mode, ds->root,
+					    stream + iter, size - iter,
+					    addr, &used_bytes);
 			iter += used_bytes;
 			addr += used_bytes;
-			if (!disas) continue;
+			if (!disas)
+				continue;
 
-			disas->address = addr-used_bytes;
+			disas->address = addr - used_bytes;
 			dis_squash(disas);
 			ds_addinstr(ds, disas);
 		}
@@ -55,12 +61,16 @@ void ds_decode(struct disassembler *ds, unsigned char *stream, int size, uint64_
 		while (iter < size) {
 			int used_bytes = 0;
 
-			struct dis *disas = mips_disassemble(ds->mode, ds->root, stream+iter, size-iter, addr, &used_bytes);
+			struct dis *disas =
+			    mips_disassemble(ds->mode, ds->root,
+					     stream + iter, size - iter,
+					     addr, &used_bytes);
 			iter += used_bytes;
 			addr += used_bytes;
-			if (!disas) continue;
+			if (!disas)
+				continue;
 
-			disas->address = addr-used_bytes;
+			disas->address = addr - used_bytes;
 			dis_squash(disas);
 			ds_addinstr(ds, disas);
 		}
@@ -70,12 +80,16 @@ void ds_decode(struct disassembler *ds, unsigned char *stream, int size, uint64_
 		while (iter < size) {
 			int used_bytes = 0;
 
-			struct dis *disas = arm_disassemble(ds->mode, ds->root, stream+iter, size-iter, addr, &used_bytes);
+			struct dis *disas =
+			    arm_disassemble(ds->mode, ds->root,
+					    stream + iter, size - iter,
+					    addr, &used_bytes);
 			iter += used_bytes;
 			addr += used_bytes;
-			if (!disas) continue;
+			if (!disas)
+				continue;
 
-			disas->address = addr-used_bytes;
+			disas->address = addr - used_bytes;
 			dis_squash(disas);
 			ds_addinstr(ds, disas);
 		}
@@ -86,8 +100,10 @@ void ds_addinstr(struct disassembler *ds, struct dis *dis)
 {
 	ds->num_instr++;
 	if (!ds->instr)
-		ds->instr = malloc(sizeof(struct dis*));
+		ds->instr = malloc(sizeof(struct dis *));
 	else
-		ds->instr = realloc(ds->instr, sizeof(struct dis*)*ds->num_instr);
-	ds->instr[ds->num_instr-1] = dis;
+		ds->instr =
+		    realloc(ds->instr,
+			    sizeof(struct dis *) * ds->num_instr);
+	ds->instr[ds->num_instr - 1] = dis;
 }
