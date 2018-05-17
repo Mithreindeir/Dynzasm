@@ -11,7 +11,8 @@
 
 /*Trie node flags*/
 #define D_CROSS 1
-#define D_NORN 2
+#define ARM_NORN 2
+#define LDSTC 4
 
 /*Constants*/
 #define ALWAYS_EXECUTE 0xe
@@ -19,15 +20,24 @@
 #define ARM_LSLR 1
 #define ARM_LSRI 2
 #define ARM_LSRR 3
+#define ARM_ASR 4
+#define ARM_ROR_RRX 6
 
 /*Bitfield Extraction Macros*/
 #define DATA_OPCODE(ins) (BITS(ins, 21, 25))
 #define S_FIELD(ins) (BITS(ins, 20, 21))
-#define L_FIELD(ins) (BITS(ins, 24, 25))
+#define B_L_FIELD(ins) (BITS(ins, 24, 25))
+#define LD_B_FIELD(ins) (BITS(ins, 22, 23))
+#define LD_L_FIELD(ins) (BITS(ins, 20, 21))
 #define THREE_OBITS(ins) (BITS(ins, 25, 28))
 #define COND(ins) (BITS(ins, 28, 32))
 
+#define ARM_ADDSUB(ins) (BITS(ins, 23, 24))
+#define ARM_PREINDEX(ins) (BITS(ins, 24, 25))
+#define ARM_IMM8(ins) (BITS(ins, 0, 8))
+#define ARM_ROTATE_IMM(ins) (BITS(ins, 8, 12))
 #define ARM_OFFSET24(ins) (BITS(ins, 0, 24))
+#define ARM_OFFSET12(ins) (BITS(ins, 0, 12))
 #define ARM_RN(ins) (BITS(ins, 16, 20))
 #define ARM_RS(ins) (BITS(ins, 8, 12))
 #define ARM_RD(ins) (BITS(ins, 12, 16))
@@ -52,6 +62,6 @@ struct dis *arm_disassemble(int mode, struct trie_node *node, u8 * stream,
 			    long max, uint64_t addr, int *used_bytes);
 void arm_decode_operands(struct dis *disas, struct arm_instr_entry *e,
 	       		 uint64_t addr, uint32_t instruction, u8 flags);
-void arm_shifter_operand(struct dis *disas, uint32_t instruction, int type);
+void arm_shifter_operand(struct dis *disas, struct operand_tree *opr, uint32_t instruction, int type);
 
 #endif

@@ -29,8 +29,16 @@
 010a cmp I
 010b cmn I
 010c irr I
-010d mov I
+010d mov I f:2
 010e bic I
-010f mvn I
-04 load L
+010f mvn I f:2
+02 invalid NA f:4
+0201 ldr O
+0200 str O
+03 invalid NA f:4
+0301 ldr R
+0300 str R
+04 invalid NA f:4
+0401 ldr L
+0400 str L
 05 b B
