@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/Mithreindeir/Dynzasm.svg?branch=master)](https://travis-ci.org/Mithreindeir/Dynzasm)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/15646/badge.svg)](https://scan.coverity.com/projects/mithreindeir-dynzasm)
 
-Dynzasm is a fast lightweight disassembly library. Disassembly is structured as trees with arbitrary formatting strings, allowing detailed disassembly information and making it easy to support custom syntaxes. 
+Dynzasm is a fast lightweight disassembly library written in c99 code with no external dependencies. Disassembly is structured as trees with arbitrary formatting strings, allowing detailed disassembly information and making it easy to support custom syntaxes. 
 
 | ARCH | SUPPORT |
 |-----|----------|
