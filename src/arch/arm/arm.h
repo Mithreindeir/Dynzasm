@@ -13,6 +13,7 @@
 #define D_CROSS 1
 #define ARM_NORN 2
 #define LDSTC 4
+#define LDM_STM 8
 
 /*Constants*/
 #define ALWAYS_EXECUTE 0xe
@@ -24,13 +25,19 @@
 #define ARM_ROR_RRX 6
 
 /*Bitfield Extraction Macros*/
+#define STKM(ins) (ARM_RN(ins)==13&&!(ins&(1<<13))&&LDST_W_FIELD(ins))
+#define LDMSTM_BITS(ins) (((STKM(ins))<<2)+(LD_P_FIELD(ins)<<1)+LD_U_FIELD(ins))
 #define DATA_OPCODE(ins) (BITS(ins, 21, 25))
 #define S_FIELD(ins) (BITS(ins, 20, 21))
 #define B_L_FIELD(ins) (BITS(ins, 24, 25))
 #define LD_B_FIELD(ins) (BITS(ins, 22, 23))
+#define LDST_W_FIELD(ins) (BITS(ins, 21, 22))
 #define LD_L_FIELD(ins) (BITS(ins, 20, 21))
+#define LD_P_FIELD(ins) (BITS(ins, 24, 25))
+#define LD_U_FIELD(ins) (BITS(ins, 23, 24))
 #define THREE_OBITS(ins) (BITS(ins, 25, 28))
 #define COND(ins) (BITS(ins, 28, 32))
+#define RLIST(ins) (BITS(ins, 0, 16))
 
 #define ARM_ADDSUB(ins) (BITS(ins, 23, 24))
 #define ARM_PREINDEX(ins) (BITS(ins, 24, 25))
@@ -46,12 +53,14 @@
 #define ARM_SHIFT(ins) (BITS(ins, 4, 7))
 
 /*Instruction Type Macros*/
-#define VALID_DPROC(instr) (!(!(THREE_OBITS(instr)<=1) || ((DATA_OPCODE(instr)>>2==0x2) && !S_FIELD(instr))))
+#define VALID_DPROC(instr) (!(!(THREE_OBITS(instr)<=1) || IS_MULT(instr) || ((DATA_OPCODE(instr)>>2==0x2) && !S_FIELD(instr))))
 #define IS_MULT(ins) ((BITS(ins, 25, 28)==0&&BITS(ins, 4,8)==0x9))
 
 /*Instruction Encoding Types*/
 #define DATA_PROCESS 'D'
-#define MULTIPLIES 'M'
+#define MULT 'M'
+#define UMULT 'U'
+#define AMULT 'A'
 #define LD_ST_OFF 'O'
 #define LD_ST_REG 'R'
 #define LD_ST_MUL 'L'

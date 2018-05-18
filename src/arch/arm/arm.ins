@@ -1,4 +1,12 @@
 00 invalid NA f:1
+0010 mul M
+0020 mla A
+0030 umaal U
+0040 mls A
+0050 umull U
+0060 umlal U
+0070 smull U
+0080 smlal U
 01 invalid NA f:1
 0000 and D
 0001 eor D
@@ -39,6 +47,22 @@
 0301 ldr R
 0300 str R
 04 invalid NA f:4
-0401 ldr L
-0400 str L
+0401 ldm L f:8
+040100 ldmda L
+040101 ldmia L
+040102 ldmdb L
+040103 ldmib L
+040104 ldmfa L
+040105 ldmfd L
+040106 ldmea L
+040107 ldmed L
+0400 stm L f:8
+040000 stmda L
+040001 stmia L
+040002 stmdb L
+040003 stmib L
+040004 stmed L
+040005 stmea L
+040006 stmfd L
+040007 stmfa L
 05 b B

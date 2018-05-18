@@ -19,13 +19,17 @@ struct dis *arm_disassemble(int mode, struct trie_node *node, u8 * stream,
 	if (CHECK_FLAG(n->flags, D_CROSS) && VALID_DPROC(instruction)) {
 		unsigned char opcode = DATA_OPCODE(instruction);
 		n = trie_lookup(n, &opcode, 1);
-	} else if (CHECK_FLAG(n->flags, D_CROSS)) {
-		if (IS_MULT(instruction)) {
-		}
+	} else if (CHECK_FLAG(n->flags, D_CROSS) && IS_MULT(instruction)) {
+		unsigned char opcode = ((DATA_OPCODE(instruction)&7)+1)<<4;
+		n = trie_lookup(n, &opcode, 1);
 	/*Differentiate between load and store instructions*/
 	} else if (CHECK_FLAG(n->flags, LDSTC)) {
 		unsigned char sto = LD_L_FIELD(instruction);
 		n = trie_lookup(n, &sto, 1);
+	}
+	if (CHECK_FLAG(n->flags, LDM_STM)) {
+		unsigned char spu = LDMSTM_BITS(instruction);
+		n = trie_lookup(n, &spu, 1);
 	}
 
 	if (!n || !n->value) {
@@ -45,6 +49,21 @@ struct dis *arm_disassemble(int mode, struct trie_node *node, u8 * stream,
 		snprintf(disas->mnemonic+miter, MAX_MNEM_SIZE_ARM-miter, "%s", arm_conditions[cond]);
 
 	arm_decode_operands(disas, e, addr, instruction, n->flags);
+
+	/*Apply aliases (eg: stmfd to push)*/
+	if (!strncmp(disas->mnemonic, "stmfd", 5) && disas->num_operands) {
+		snprintf(disas->mnemonic, MAX_MNEM_SIZE_ARM, "push");
+		operand_tree_destroy(disas->operands[0]);
+		disas->num_operands--;
+		memmove(disas->operands,disas->operands+1,sizeof(struct operand_tree*)*disas->num_operands);
+		disas->operands=realloc(disas->operands, sizeof(struct operand_tree*)*disas->num_operands);
+	} if (!strncmp(disas->mnemonic, "ldmfd", 5) && disas->num_operands) {
+		snprintf(disas->mnemonic, MAX_MNEM_SIZE_ARM, "pop");
+		operand_tree_destroy(disas->operands[0]);
+		disas->num_operands--;
+		memmove(disas->operands,disas->operands+1,sizeof(struct operand_tree*)*disas->num_operands);
+		disas->operands=realloc(disas->operands, sizeof(struct operand_tree*)*disas->num_operands);
+	}
 
 	return disas;
 }
@@ -104,7 +123,46 @@ void arm_decode_operands(struct dis *disas, struct arm_instr_entry *e,
 			dis_add_operand(disas, ireg);
 			break;
 		/*Load/Store Multiple*/
-		case 'L':
+		case 'L':;
+			struct operand_tree *breg = operand_tree_init(DIS_BRANCH);
+			if (LDST_W_FIELD(instr)) strcpy(TREE_FORMAT(breg), "$0!");
+			else strcpy(TREE_FORMAT(breg), "$0");
+			operand_tree_add(breg, operand_reg(arm_registers[ARM_RN(instr)]));
+			dis_add_operand(disas, breg);
+			struct operand_tree *rlist = operand_tree_init(DIS_BRANCH);
+			uint16_t rl = RLIST(instr);
+			int riter = 0;
+			riter += snprintf(TREE_FORMAT(rlist),FMT_SIZE-riter, "{");
+			for (int i = 0; i < 16; i++) {
+				if (rl & (1<<i)) {
+					operand_tree_add(rlist, operand_reg(arm_registers[i]));
+					if (TREE_NCHILD(rlist)>1)
+						riter += snprintf(TREE_FORMAT(rlist)+riter,FMT_SIZE-riter, ", ");
+					riter += snprintf(TREE_FORMAT(rlist)+riter,FMT_SIZE-riter, "$%d", TREE_NCHILD(rlist)-1);
+				}
+			}
+			riter += snprintf(TREE_FORMAT(rlist)+riter,FMT_SIZE-riter, "}");
+			dis_add_operand(disas, rlist);
+			break;
+		/*Multiply*/
+		case 'M':
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RN(instr)]));
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RM(instr)]));
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RS(instr)]));
+			break;
+		/*Long multiply*/
+		case 'U':
+			/*RdHi==Rn Rdlo==Rd */
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RD(instr)]));
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RN(instr)]));
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RM(instr)]));
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RS(instr)]));
+			break;
+		/*Multiply Accumulate*/
+		case 'A':
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RN(instr)]));
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RM(instr)]));
+			dis_add_operand(disas, operand_reg(arm_registers[ARM_RS(instr)]));
 			dis_add_operand(disas, operand_reg(arm_registers[ARM_RD(instr)]));
 			break;
 	}
