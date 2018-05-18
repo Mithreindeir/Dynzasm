@@ -75,6 +75,16 @@ void operand_tree_destroy(struct operand_tree *node)
 	free(node);
 }
 
+void operand_tree_fmt(struct operand_tree *node, const char *fmt, ...)
+{
+	if (TREE_TYPE(node) != DIS_BRANCH) return;
+	int iter = strlen(TREE_FORMAT(node));
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(TREE_FORMAT(node)+iter, FMT_SIZE-iter, fmt, args);
+	va_end(args);
+}
+
 void operand_tree_add(struct operand_tree *node,
 		      struct operand_tree *child)
 {

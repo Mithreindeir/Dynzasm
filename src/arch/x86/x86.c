@@ -392,42 +392,30 @@ struct operand_tree *x86_indir_operand_tree(int op_size, const char *base,
 	struct operand_tree *indir = operand_tree_init(DIS_BRANCH);
 
 	/*Create a format string based on possible parameters */
-	char buf[32];
-	memset(buf, 0, 32);
-	int iter = 0;
 	if (op_size >= 1 && op_size <= 4)
-		iter +=
-		    snprintf(buf + iter, 32 - iter, "%s ",
-			     operand_size_prefix[op_size - 1]);
-	iter += snprintf(buf + iter, 32 - iter, "[");
+		operand_tree_fmt(indir, "%s ", operand_size_prefix[op_size-1]);
+
+	operand_tree_fmt(indir, "[");
 	/*Possible parameters: base op, index op, scale op, offset op */
 	struct operand_tree *bop = NULL, *iop = NULL, *sop = NULL, *oop =
 	    NULL;
 	if (base) {
 		bop = operand_reg(base);
 		operand_tree_add(indir, bop);
-		iter +=
-		    snprintf(buf + iter, 32 - iter, "$%d",
-			     TREE_NCHILD(indir) - 1);
+		operand_tree_fmt(indir, "$%d", TREE_NCHILD(indir) - 1);
 	}
 	if (index) {
 		iop = operand_reg(index);
 		operand_tree_add(indir, iop);
 		if (base)
-			iter +=
-			    snprintf(buf + iter, 32 - iter, "+$%d",
-				     TREE_NCHILD(indir) - 1);
+			operand_tree_fmt(indir, "+$%d", TREE_NCHILD(indir) - 1);
 		else
-			iter +=
-			    snprintf(buf + iter, 32 - iter, "$%d",
-				     TREE_NCHILD(indir) - 1);
+			operand_tree_fmt(indir, "$%d", TREE_NCHILD(indir) - 1);
 	}
 	if (scale != 1) {
 		sop = operand_imm(scale);
 		operand_tree_add(indir, sop);
-		iter +=
-		    snprintf(buf + iter, 32 - iter, "*$%d",
-			     TREE_NCHILD(indir) - 1);
+		operand_tree_fmt(indir, "*$%d", TREE_NCHILD(indir) - 1);
 	}
 
 	/*Correct sign for offset */
@@ -440,17 +428,12 @@ struct operand_tree *x86_indir_operand_tree(int op_size, const char *base,
 		oop = operand_addr(offset);
 		operand_tree_add(indir, oop);
 		if (TREE_NCHILD(indir) == 1 && sign != '-')
-			iter +=
-			    snprintf(buf + iter, 32 - iter, "$%d",
-				     TREE_NCHILD(indir) - 1);
+			operand_tree_fmt(indir, "$%d", TREE_NCHILD(indir)-1);
 		else
-			iter +=
-			    snprintf(buf + iter, 32 - iter, "%c$%d", sign,
-				     TREE_NCHILD(indir) - 1);
+			operand_tree_fmt(indir, "%c$%d", sign, TREE_NCHILD(indir)-1);
 
 	}
-	iter += snprintf(buf + iter, 32 - iter, "]");
-	strcpy(TREE_FORMAT(indir), buf);
+	operand_tree_fmt(indir, "]");
 	return indir;
 }
 

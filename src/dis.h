@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include "common/common.h"
 
 #define DIS_ADDR 	3
@@ -75,6 +76,7 @@ void dis_squash(struct dis *dis);
 
 struct operand_tree *operand_tree_init(int type);
 void operand_tree_destroy(struct operand_tree *node);
+void operand_tree_fmt(struct operand_tree *node, const char *fmt, ...);
 void operand_tree_add(struct operand_tree *node,
 		      struct operand_tree *child);
 /*Convenience initializers for operands*/

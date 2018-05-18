@@ -40,25 +40,25 @@ struct dis *arm_disassemble(int mode, struct trie_node *node, u8 * stream,
 	struct dis *disas = dis_init();
 	/*The end mnemonic contains several fields*/
 	int miter = 0;
-	miter += snprintf(disas->mnemonic, MAX_MNEM_SIZE_ARM, "%s", e->mnemonic);
+	miter += snprintf(disas->mnemonic, MNEM_SIZE, "%s", e->mnemonic);
 	if (S_FIELD(instruction) && e->instr_type == DATA_PROCESS)
-		miter += snprintf(disas->mnemonic+miter, MAX_MNEM_SIZE_ARM-miter, "s");
+		miter += snprintf(disas->mnemonic+miter, MNEM_SIZE-miter, "s");
 	if (B_L_FIELD(instruction) && e->instr_type == BRANCH)
-		miter += snprintf(disas->mnemonic+miter, MAX_MNEM_SIZE_ARM-miter, "l");
+		miter += snprintf(disas->mnemonic+miter, MNEM_SIZE-miter, "l");
 	if (cond != ALWAYS_EXECUTE)
-		snprintf(disas->mnemonic+miter, MAX_MNEM_SIZE_ARM-miter, "%s", arm_conditions[cond]);
+		snprintf(disas->mnemonic+miter, MNEM_SIZE-miter, "%s", arm_conditions[cond]);
 
 	arm_decode_operands(disas, e, addr, instruction, n->flags);
 
 	/*Apply aliases (eg: stmfd to push)*/
 	if (!strncmp(disas->mnemonic, "stmfd", 5) && disas->num_operands) {
-		snprintf(disas->mnemonic, MAX_MNEM_SIZE_ARM, "push");
+		snprintf(disas->mnemonic, MNEM_SIZE, "push");
 		operand_tree_destroy(disas->operands[0]);
 		disas->num_operands--;
 		memmove(disas->operands,disas->operands+1,sizeof(struct operand_tree*)*disas->num_operands);
 		disas->operands=realloc(disas->operands, sizeof(struct operand_tree*)*disas->num_operands);
 	} if (!strncmp(disas->mnemonic, "ldmfd", 5) && disas->num_operands) {
-		snprintf(disas->mnemonic, MAX_MNEM_SIZE_ARM, "pop");
+		snprintf(disas->mnemonic, MNEM_SIZE, "pop");
 		operand_tree_destroy(disas->operands[0]);
 		disas->num_operands--;
 		memmove(disas->operands,disas->operands+1,sizeof(struct operand_tree*)*disas->num_operands);
@@ -72,8 +72,6 @@ void arm_decode_operands(struct dis *disas, struct arm_instr_entry *e,
 			 uint64_t addr, uint32_t instr, u8 flags)
 {
 	(void)flags;
-	char fmt[64];
-	int fiter = 0;
 	switch (e->instr_type) {
 		/*Data processing Instruction*/
 		case 'D':
@@ -101,11 +99,10 @@ void arm_decode_operands(struct dis *disas, struct arm_instr_entry *e,
 			struct operand_tree *ioff = operand_tree_init(DIS_BRANCH);
 			operand_tree_add(ioff, operand_reg(arm_registers[ARM_RN(instr)]));
 			operand_tree_add(ioff, operand_imm(ARM_OFFSET12(instr)));
-			fiter += snprintf(fmt+fiter, 64-fiter, "[$0");
+			operand_tree_fmt(ioff, "[$0");
 			int ineg = !ARM_ADDSUB(instr);
-			if (ARM_PREINDEX(instr)) fiter+=snprintf(fmt+fiter,64-fiter, ",%s$1]", ineg?" -":" ");
-			else fiter+=snprintf(fmt+fiter,64-fiter, "],%s$1", ineg?" -":" ");
-			strcpy(TREE_FORMAT(ioff), fmt);
+			if (ARM_PREINDEX(instr)) operand_tree_fmt(ioff, ",%s$1]", ineg?" -":" ");
+			else operand_tree_fmt(ioff, "],%s$1", ineg?" -":" ");
 			dis_add_operand(disas, ioff);
 			break;
 		/*Load/Store Register Offset*/
@@ -114,34 +111,32 @@ void arm_decode_operands(struct dis *disas, struct arm_instr_entry *e,
 			struct operand_tree *ireg = operand_tree_init(DIS_BRANCH);
 			operand_tree_add(ireg, operand_reg(arm_registers[ARM_RN(instr)]));
 			operand_tree_add(ireg, operand_reg(arm_registers[ARM_RM(instr)]));
-			fiter += snprintf(fmt+fiter, 64-fiter, "[$0");
+			operand_tree_fmt(ireg, "[$0");
 			int rneg = !ARM_ADDSUB(instr);
-			if (ARM_PREINDEX(instr)) fiter+=snprintf(fmt+fiter,64-fiter, ",%s$1]", rneg?" -":" ");
-			else fiter+=snprintf(fmt+fiter,64-fiter, "],%s$1", rneg?" -":" ");
-			strcpy(TREE_FORMAT(ireg), fmt);
+			if (ARM_PREINDEX(instr)) operand_tree_fmt(ireg, ",%s$1]", rneg?" -":" ");
+			else operand_tree_fmt(ireg, "],%s$1", rneg?" -":" ");
 			arm_shifter_operand(disas, ireg, instr, e->instr_type);
 			dis_add_operand(disas, ireg);
 			break;
 		/*Load/Store Multiple*/
 		case 'L':;
 			struct operand_tree *breg = operand_tree_init(DIS_BRANCH);
-			if (LDST_W_FIELD(instr)) strcpy(TREE_FORMAT(breg), "$0!");
-			else strcpy(TREE_FORMAT(breg), "$0");
+			if (LDST_W_FIELD(instr)) operand_tree_fmt(breg, "$0!");
+			else operand_tree_fmt(breg, "$0");
 			operand_tree_add(breg, operand_reg(arm_registers[ARM_RN(instr)]));
 			dis_add_operand(disas, breg);
 			struct operand_tree *rlist = operand_tree_init(DIS_BRANCH);
 			uint16_t rl = RLIST(instr);
-			int riter = 0;
-			riter += snprintf(TREE_FORMAT(rlist),FMT_SIZE-riter, "{");
+			operand_tree_fmt(rlist, "{");
 			for (int i = 0; i < 16; i++) {
 				if (rl & (1<<i)) {
 					operand_tree_add(rlist, operand_reg(arm_registers[i]));
 					if (TREE_NCHILD(rlist)>1)
-						riter += snprintf(TREE_FORMAT(rlist)+riter,FMT_SIZE-riter, ", ");
-					riter += snprintf(TREE_FORMAT(rlist)+riter,FMT_SIZE-riter, "$%d", TREE_NCHILD(rlist)-1);
+						operand_tree_fmt(rlist, ", ");
+					operand_tree_fmt(rlist, "$%d", TREE_NCHILD(rlist)-1);
 				}
 			}
-			riter += snprintf(TREE_FORMAT(rlist)+riter,FMT_SIZE-riter, "}");
+			operand_tree_fmt(rlist, "}");
 			dis_add_operand(disas, rlist);
 			break;
 		/*Multiply*/
@@ -180,13 +175,13 @@ void arm_shifter_operand(struct dis *disas, struct operand_tree *opr, uint32_t i
 				unsigned char rm = ARM_RS(instr);
 				if (st==ARM_LSLI) {
 					operand_tree_add(shift, operand_imm(sa));
-					strcpy(TREE_FORMAT(shift), "lsl #$0");
+					operand_tree_fmt(shift, "lsl #$0");
 				} else if (st == ARM_LSLR) {
 					operand_tree_add(shift, operand_reg(arm_registers[rm]));
-					strcpy(TREE_FORMAT(shift), "lsl $0");
+					operand_tree_fmt(shift, "lsl $0");
 				} else if (st==ARM_LSRI) {
 					operand_tree_add(shift, operand_imm(sa));
-					strcpy(TREE_FORMAT(shift), "lsr #$0");
+					operand_tree_fmt(shift, "lsr #$0");
 				}
 				dis_add_operand(disas, shift);
 			}
@@ -195,24 +190,27 @@ void arm_shifter_operand(struct dis *disas, struct operand_tree *opr, uint32_t i
 			if (ARM_SHIFT_AMOUNT(instr)||ARM_SHIFT(instr)) {
 				unsigned char st = ARM_SHIFT(instr);
 				unsigned char si = ARM_SHIFT_AMOUNT(instr);
-				char *fmt = strtok(TREE_FORMAT(opr), "]");
-				fmt = fmt + strlen(fmt);
-				if (!fmt) return;
+				(void)strtok(TREE_FORMAT(opr), "]");
 				if (st==ARM_LSLI) {
 					operand_tree_add(opr, operand_imm(si));
-					strcpy(fmt, ", lsl #$2]");
+					operand_tree_fmt(opr, ", lsl #$2]");
+					//strcpy(fmt, ", lsl #$2]");
 				} else if (st==ARM_LSRI) {
 					operand_tree_add(opr, operand_imm(!si?32:si));
-					strcpy(fmt, ", lsr #$2]");
+					operand_tree_fmt(opr, ", lsr #$2]");
+					//strcpy(fmt, ", lsr #$2]");
 				} else if (st==ARM_ASR) {
 					operand_tree_add(opr, operand_imm(!si?32:si));
-					strcpy(fmt, ", asr #$2]");
+					operand_tree_fmt(opr, ", asr #$2]");
+					//strcpy(fmt, ", asr #$2]");
 				} else if (st==ARM_ROR_RRX) {
 					if (!si) {
 						operand_tree_add(opr, operand_imm(si));
-						strcpy(fmt, ", ror #$2]");
+						operand_tree_fmt(opr, ", ror #$2]");
+						//strcpy(fmt, ", ror #$2]");
 					} else {
-						strcpy(fmt, ", rrx]");
+						operand_tree_fmt(opr, ", rrx]");
+						//strcpy(fmt, ", rrx]");
 					}
 				}
 			}
