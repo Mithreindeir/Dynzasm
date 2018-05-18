@@ -1,13 +1,15 @@
 # Dynzasm
+[![Build Status](https://travis-ci.org/Mithreindeir/Dynzasm.svg?branch=master)](https://travis-ci.org/Mithreindeir/Dynzasm)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/15646/badge.svg)](https://scan.coverity.com/projects/mithreindeir-dynzasm)
 
-| | |
-|----------|--------------------------------|
-|**TRAVIS**|[![Build Status](https://travis-ci.org/Mithreindeir/Dynzasm.svg?branch=master)](https://travis-ci.org/Mithreindeir/Dynzasm)|
-|**Coverity**|[![Coverity Scan Build Status](https://scan.coverity.com/projects/15646/badge.svg)](https://scan.coverity.com/projects/mithreindeir-dynzasm)|
+Dynzasm is a fast lightweight disassembly library. Disassembly is structured as trees with arbitrary formatting strings, allowing detailed disassembly information and making it easy to support custom syntaxes. 
 
-Interactive Disassembly Library WIP
-
-Currently supports x86/x86_64/MIPS disassembling.
+| ARCH | SUPPORT |
+|-----|----------|
+|X86| Most (excluding extensions) |
+|X64| Most (excluding extensions)|
+|ARM| Partial|
+|MIPS| Most |
 
 ```C
 #include "disas.h"
