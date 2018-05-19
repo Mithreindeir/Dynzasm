@@ -1,16 +1,14 @@
 #include "mips.h"
 
 struct dis *mips_disassemble(int mode, struct trie_node *node, u8 * stream,
-			     long max, uint64_t addr, int *used_bytes)
+			     long max, uint64_t addr)
 {
 	if (max < 4) {
-		*used_bytes = max;
 		return NULL;
 	}
 	(void) mode;
 	(void) addr;
 	uint32_t instruction = *((uint32_t *) stream);
-	*used_bytes = 4;
 
 	unsigned char opcode = OPCODE(instruction);
 	struct trie_node *n = trie_lookup(node, &opcode, 1);
@@ -35,6 +33,7 @@ struct dis *mips_disassemble(int mode, struct trie_node *node, u8 * stream,
 	memcpy(disas->mnemonic, e->mnemonic, strlen(e->mnemonic));
 	mips_decode_operands(disas, e, instruction, n->flags);
 
+	disas->used_bytes = 4;
 	return disas;
 }
 

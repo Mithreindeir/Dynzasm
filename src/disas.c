@@ -36,22 +36,23 @@ void ds_destroy(struct disassembler *ds)
 void ds_decode(struct disassembler *ds, unsigned char *stream, int size,
 	       uint64_t entry)
 {
+	/*
 	if (ds->arch == X86_ARCH) {
 		int iter = 0;
 		int addr = entry;
 		while (iter < size) {
-			int used_bytes = 0;
-
 			struct dis *disas =
 			    x86_disassemble(ds->mode, ds->root,
 					    stream + iter, size - iter,
-					    addr, &used_bytes);
-			iter += used_bytes;
-			addr += used_bytes;
-			if (!disas)
+					    addr);
+			if (!disas) {
+				iter++;
+				addr++;
 				continue;
-
-			disas->address = addr - used_bytes;
+			}
+			iter += disas->used_bytes;
+			addr += disas->used_bytes;
+			disas->address = addr - disas->used_bytes;
 			dis_squash(disas);
 			ds_addinstr(ds, disas);
 		}
@@ -59,18 +60,19 @@ void ds_decode(struct disassembler *ds, unsigned char *stream, int size,
 		int iter = 0;
 		int addr = entry;
 		while (iter < size) {
-			int used_bytes = 0;
-
 			struct dis *disas =
 			    mips_disassemble(ds->mode, ds->root,
 					     stream + iter, size - iter,
-					     addr, &used_bytes);
-			iter += used_bytes;
-			addr += used_bytes;
-			if (!disas)
+					     addr);
+			if (!disas) {
+				iter++;
+				addr++;
 				continue;
+			}
+			iter += disas->used_bytes;
+			addr += disas->used_bytes;
 
-			disas->address = addr - used_bytes;
+			disas->address = addr - disas->used_bytes;
 			dis_squash(disas);
 			ds_addinstr(ds, disas);
 		}
@@ -78,22 +80,59 @@ void ds_decode(struct disassembler *ds, unsigned char *stream, int size,
 		int iter = 0;
 		int addr = entry;
 		while (iter < size) {
-			int used_bytes = 0;
-
 			struct dis *disas =
 			    arm_disassemble(ds->mode, ds->root,
 					    stream + iter, size - iter,
-					    addr, &used_bytes);
-			iter += used_bytes;
-			addr += used_bytes;
-			if (!disas)
+					    addr);
+			if (!disas) {
+				iter++;
+				addr++;
 				continue;
+			}
+			iter += disas->used_bytes;
+			addr += disas->used_bytes;
 
-			disas->address = addr - used_bytes;
+			disas->address = addr - disas->used_bytes;
 			dis_squash(disas);
 			ds_addinstr(ds, disas);
 		}
+	}*/
+	int iter = 0;
+	int addr = entry;
+	struct dis *disas = NULL;
+	while (iter < size) {
+		disas = ds_disas(ds, stream+iter, size-iter, addr);
+		if (!disas) {
+			iter++;
+			addr++;
+			continue;
+		}
+		iter += disas->used_bytes;
+		addr += disas->used_bytes;
 	}
+}
+
+struct dis *ds_disas(struct disassembler *ds, unsigned char *stream, int size,
+	       	     uint64_t addr)
+{
+	struct dis *disas = NULL;
+	switch (ds->arch) {
+		case ARM_ARCH:
+			disas = arm_disassemble(ds->mode, ds->root, stream, size, addr);
+			break;
+		case MIPS_ARCH:
+			disas = mips_disassemble(ds->mode, ds->root, stream, size, addr);
+			break;
+		case X86_ARCH:
+			disas = x86_disassemble(ds->mode, ds->root, stream, size, addr);
+			break;
+	}
+
+	if (!disas) return NULL;
+	disas->address = addr;
+	dis_squash(disas);
+	ds_addinstr(ds, disas);
+	return disas;
 }
 
 void ds_addinstr(struct disassembler *ds, struct dis *dis)

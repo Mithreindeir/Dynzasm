@@ -66,6 +66,7 @@ struct dis {
 	char mnemonic[MNEM_SIZE];
 	char op_squash[SQUASH_SIZE];
 	uint64_t address;
+	int used_bytes;
 };
 
 

@@ -41,7 +41,7 @@
 #define SIB_NO_INDEX(idx) 	(idx==4)
 
 struct dis *x86_disassemble(int mode, struct trie_node *node, u8 * stream,
-			    long max, uint64_t addr, int *used_bytes);
+			    long max, uint64_t addr);
 long x86_decode_operand(struct operand_tree **opt, int mode, char *operand,
 			u8 flags, u8 * stream, long max);
 int x86_operand_size(int mode, int op_size, char size_byte, u8 flags);

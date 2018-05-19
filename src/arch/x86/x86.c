@@ -1,7 +1,7 @@
 #include "x86.h"
 
 struct dis *x86_disassemble(int mode, struct trie_node *root, u8 * stream,
-			    long max, uint64_t addr, int *used_bytes)
+			    long max, uint64_t addr)
 {
 	if (!max)
 		return 0;
@@ -51,7 +51,6 @@ struct dis *x86_disassemble(int mode, struct trie_node *root, u8 * stream,
 	}
 	/*If the instruction is not found, then die */
 	if (!n || !n->value) {
-		*used_bytes = iter + 1;
 		return NULL;
 	}
 
@@ -103,8 +102,7 @@ struct dis *x86_disassemble(int mode, struct trie_node *root, u8 * stream,
 		}
 	}
 
-	*used_bytes = iter;
-
+	disas->used_bytes = iter;
 	return disas;
 }
 

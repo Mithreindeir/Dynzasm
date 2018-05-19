@@ -68,7 +68,7 @@
 
 
 struct dis *arm_disassemble(int mode, struct trie_node *node, u8 * stream,
-			    long max, uint64_t addr, int *used_bytes);
+			    long max, uint64_t addr);
 void arm_decode_operands(struct dis *disas, struct arm_instr_entry *e,
 	       		 uint64_t addr, uint32_t instruction, u8 flags);
 void arm_shifter_operand(struct dis *disas, struct operand_tree *opr, uint32_t instruction, int type);
