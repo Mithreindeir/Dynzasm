@@ -128,7 +128,7 @@ long x86_decode_operand(struct operand_tree **opt, int mode, char *operand,
 			    x86_operand_size(mode, operand_size,
 					     operand[1], flags);
 		iter +=
-		    x86_disassemble_operand(opt, operand[0], operand_size,
+		    x86_disassemble_operand(opt, mode, operand[0], operand_size,
 					    addr_size, stream + iter,
 					    max - iter, flags);
 	} else {
@@ -158,7 +158,7 @@ long x86_decode_operand(struct operand_tree **opt, int mode, char *operand,
 }
 
 /*Disassembles operand and returns used bytes*/
-long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode,
+long x86_disassemble_operand(struct operand_tree **operand, int mode, u8 addr_mode,
 			     int op_size, int addr_size, u8 * stream,
 			     long max, u8 flags)
 {
@@ -168,7 +168,7 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode,
 		/*MODRM Encoding */
 	case 'E':		/*Modrm encoding dword [ebx+4] <- this thing */
 		iter +=
-		    x86_decode_modrm(operand, op_size, addr_size, stream,
+		    x86_decode_modrm(operand, mode, op_size, addr_size, stream,
 				     max, flags);
 		break;
 	case 'G':;		/*Register modrm encoding ->>> eax, <<-- dword [eax] */
@@ -204,7 +204,7 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode,
 		break;
 	case 'M':;		/*Memory addres. (modrm but with an operand size of 0 */
 		iter +=
-		    x86_decode_modrm(operand, 0, addr_size, stream, max,
+		    x86_decode_modrm(operand, mode, 0, addr_size, stream, max,
 				     flags);
 		break;
 	case 'P':
@@ -214,7 +214,7 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode,
 	case 'Q':
 		if ((stream[0] >> 6) != MODRM_REG) {
 			iter +=
-			    x86_decode_modrm(operand, op_size, addr_size,
+			    x86_decode_modrm(operand, mode,  op_size, addr_size,
 					     stream, max, flags);
 		} else {
 			*operand =
@@ -229,7 +229,7 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode,
 	case 'W':		/*Selects XMM Register or memory location */
 		if ((stream[0] >> 6) != MODRM_REG) {
 			iter +=
-			    x86_decode_modrm(operand, op_size, addr_size,
+			    x86_decode_modrm(operand, mode, op_size, addr_size,
 					     stream, max, flags);
 		} else {
 			*operand =
@@ -243,7 +243,7 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode,
 	case 'H':		/*The modrm byte specifies either a x87 fpu stack register or memory address */
 		if ((stream[0] >> 6) != MODRM_REG) {
 			iter +=
-			    x86_decode_modrm(operand, op_size, addr_size,
+			    x86_decode_modrm(operand, mode, op_size, addr_size,
 					     stream, max, flags);
 		} else {
 			*operand =
@@ -270,7 +270,7 @@ long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode,
 }
 
 /*Decodes modrm byte*/
-long x86_decode_modrm(struct operand_tree **operand, int op_size,
+long x86_decode_modrm(struct operand_tree **operand, int mode, int op_size,
 		      int addr_size, u8 * stream, long max, u8 flags)
 {
 	long iter = 0;
@@ -294,7 +294,7 @@ long x86_decode_modrm(struct operand_tree **operand, int op_size,
 		if (max < 4)
 			return iter;
 		*operand =
-		    x86_indir_operand_tree(op_size, "rip", NULL, 1,
+		    x86_indir_operand_tree(op_size, mode == MODE_X64 ? "rip" : NULL, NULL, 1,
 					   *(uint32_t *) (stream + iter));
 		iter += 4;
 		return iter;

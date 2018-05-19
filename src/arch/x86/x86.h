@@ -37,7 +37,7 @@
 #define MODRM_4DISP 		2
 #define MODRM_REG 		3
 #define MODRM_DISPONLY(mod, rm) ((mod==0) && (rm == 5))
-#define SIB_NO_BASE(mod, base) 	(base==5 && (mod != 3))
+#define SIB_NO_BASE(mod, base) 	(base==5 && (mod == 3))
 #define SIB_NO_INDEX(idx) 	(idx==4)
 
 struct dis *x86_disassemble(int mode, struct trie_node *node, u8 * stream,
@@ -45,11 +45,11 @@ struct dis *x86_disassemble(int mode, struct trie_node *node, u8 * stream,
 long x86_decode_operand(struct operand_tree **opt, int mode, char *operand,
 			u8 flags, u8 * stream, long max);
 int x86_operand_size(int mode, int op_size, char size_byte, u8 flags);
-long x86_decode_modrm(struct operand_tree **operand, int op_size,
+long x86_decode_modrm(struct operand_tree **operand, int mode, int op_size,
 		      int addr_size, u8 * stream, long max, u8 flags);
 long x86_decode_sib(struct operand_tree **operand, int op_size,
 		    int addr_size, u8 * stream, long max, u8 flags);
-long x86_disassemble_operand(struct operand_tree **operand, u8 addr_mode,
+long x86_disassemble_operand(struct operand_tree **operand, int mode, u8 addr_mode,
 			     int op_size, int addr_size, u8 * stream,
 			     long max, u8 flags);
 struct operand_tree *x86_indir_operand_tree(int op_size, const char *base,
