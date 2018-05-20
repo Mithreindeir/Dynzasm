@@ -44,7 +44,7 @@ struct trie_node *trie_lookup(struct trie_node *node,
 	return far;
 }
 
-void trie_insert(struct trie_node *root, unsigned char *stream, long max,
+int trie_insert(struct trie_node *root, unsigned char *stream, long max,
 		 void *value, unsigned char flags)
 {
 	struct trie_node *far = root;
@@ -66,8 +66,10 @@ void trie_insert(struct trie_node *root, unsigned char *stream, long max,
 		stream++;
 		max--;
 	}
+	if (far->value) return 1;
 	far->value = value;
 	far->flags = flags;
+	return 0;
 }
 
 struct trie_node *trie_node_search(struct trie_node *node,

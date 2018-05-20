@@ -50,7 +50,12 @@ void x86_parse(struct trie_node *root, int mode)
 		/*Convert the key string to raw bytes and insert into trie */
 		unsigned char buffer[32];
 		long blen = ascii_to_hex(buffer, bytes, strlen(bytes));
-		trie_insert(root, buffer, blen, entry, flags);
+		if (trie_insert(root, buffer, blen, entry, flags)) {
+			printf("Error duplicate instructions near %s\n", entry->mnemonic);
+			for (int i = 0; i < blen; i++)
+				printf("%02x ", buffer[i]);
+			free(entry);
+		}
 	}
 
 	fclose(fp);

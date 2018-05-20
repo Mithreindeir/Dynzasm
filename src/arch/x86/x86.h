@@ -37,7 +37,7 @@
 #define MODRM_4DISP 		2
 #define MODRM_REG 		3
 #define MODRM_DISPONLY(mod, rm) ((mod==0) && (rm == 5))
-#define SIB_NO_BASE(mod, base) 	(base==5 && (mod == 3))
+#define SIB_NO_BASE(mod, base) 	(base==5 && (mod == 0))
 #define SIB_NO_INDEX(idx) 	(idx==4)
 
 struct dis *x86_disassemble(int mode, struct trie_node *node, u8 * stream,

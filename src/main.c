@@ -1,12 +1,40 @@
 #include "disas.h"
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
-int main()
+void print_help(char *pn)
 {
-	struct disassembler *ds = ds_init(X86_ARCH, MODE_32B);
+	printf("Usage: %s options filename\n", pn);
+	printf("\t--arch=<architecture> Set architecture to be disassembled (x86, arm, or mips\n");
+	printf("\t--mode=<mode> Set the architecture mode (32 or 64)\n");
+	printf("\t--entry=<addr> Set a starting address\n");
+	printf("\t-a convert ascii to hex\n");
+	printf("If no file is specified stdin will be used\n");
+}
 
-	unsigned char bytes[] = "\x55\x89\xe5\x83\xec\x10\xe8\x44\x00\x00\x00\x05\xee\x1a\x00\x00\xc7\x45\xf8\x00\x00\x00\x00\xc7\x45\xfc\x00\x00\x00\x00\xeb\x22\x8b\x45\xfc\x2b\x45\xf8\x8b\x4d\xf8\x8b\x55\xfc\x01\xca\x50\xff\x75\xfc\x52\xe8\xae\xff\xff\xff\x83\xc4\x0c\x01\x45\xf8\x83\x45\xfc\x01\x83\x7d\xfc\x09\x7e\xd8\xb8\x00\x00\x00\x00\xc9\xc3";
+int get_arch(const char *arch)
+{
+	if (!strcmp(arch, "x86")) return X86_ARCH;
+	if (!strcmp(arch, "arm")) return ARM_ARCH;
+	if (!strcmp(arch, "mips")) return MIPS_ARCH;
+	printf("Invalid architecture\n");
+	exit(1);
+}
 
-	ds_decode(ds, bytes, sizeof(bytes)-1, 0x640);
+int get_mode(const char *mode)
+{
+	if (!strcmp(mode, "32")) return MODE_32B;
+	if (!strcmp(mode, "64")) return MODE_64B;
+	printf("Invalid mode\n");
+	exit(1);
+}
+
+void disas(int arch, int mode, unsigned char *bytes, long max, uint64_t addr)
+{
+	struct disassembler *ds = ds_init(arch, mode);
+
+	ds_decode(ds, bytes, max, addr);
 	struct dis *dis = NULL;
 	int biter = 0;
 	DS_FOREACH(ds, dis) {
@@ -17,5 +45,83 @@ int main()
 	}
 
 	ds_destroy(ds);
+}
+
+int main(int argc, char **argv)
+{
+	if (argc < 2) {
+		printf("%s: No target specified\n%s: Use --help for more information.\n", argv[0], argv[0]);
+	}
+	char *file = NULL, *archs = NULL, *modes = NULL, *addrs = NULL;
+	int ascii = 0;
+	for (int i = 1; i < argc; i++) {
+		if (!strncmp(argv[i], "--", 2)) {
+			if (!strcmp(argv[i]+2, "help")) {
+				print_help(argv[0]);
+			} else if (!strncmp(argv[i]+2, "arch=", 5)) {
+				archs = argv[i]+7;
+			} else if (!strncmp(argv[i]+2, "mode=", 5)) {
+				modes = argv[i]+7;
+			} else if (!strncmp(argv[i]+2, "addr=", 5)) {
+				addrs = argv[i]+7;
+			} else {
+				printf("%s not a valid argument. Use --help to find valid arguments\n", argv[i]);
+			}
+		} else if (argv[i][0] == '-') {
+			int len = strlen(argv[i]);
+			for (int j = 1; j < len; j++) {
+				if (argv[i][j] == 'a') {
+					ascii = 1;
+				} else {
+					printf("-%c not a valid argument. Use --help to find valid arguments\n", argv[i][j]);
+				}
+			}
+		} else if (!file){
+			file = argv[i];
+		}
+	}
+	if (!archs || !modes) {
+		printf("Must specify architecture and mode\n");
+		exit(1);
+	}
+	int arch = get_arch(archs), mode = get_mode(modes);
+	uint64_t addr = 0;
+	if (addrs)
+		addr = strtol(addrs, NULL, 0);
+
+	int fd = STDIN_FILENO;
+	if (file)
+		fd = open(file, O_RDWR | O_CREAT, 0666);
+	if (fd == -1) {
+		printf("Error opening file\n");
+		exit(1);
+	}
+	unsigned char byte = 0;
+	int iter = 0;
+	int blen = 100;
+	unsigned char *bbuf = malloc(blen);
+	while (read(fd, &byte, 1) > 0) {
+		if ((iter+1) >= blen) {
+			blen += 100;
+			bbuf = realloc(bbuf, blen);
+			memset(bbuf+iter, 0, blen-iter-1);
+		}
+		if (ascii) {
+			if ((byte>='a'&&byte<='f') || (byte>='A'&&byte<='F')|| (byte >= 0x30 && byte <= 0x39))
+				bbuf[iter++] = byte;
+		} else {
+			bbuf[iter++] = byte;
+		}
+	}
+	if (ascii) {
+		unsigned char *abuf = malloc(iter/2+1);
+		iter = ascii_to_hex(abuf, (char*)bbuf, iter);
+		free(bbuf);
+		bbuf = abuf;
+	}
+	disas(arch, mode, (unsigned char *)bbuf, iter, addr);
+
+	free(bbuf);
+	close(fd);
 	return 0;
 }
