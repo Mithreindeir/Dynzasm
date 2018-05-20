@@ -18,7 +18,3 @@ addons:
     branch_pattern: coverity_scan
 script:
     - make
-    - ./dis
-    - gcov $(find . -name '*.c' ! -path '*arm*' ! -name 'db*' ! -name 'disk*' ! -name 'ser*')
-
-after_success: bash <(curl -s https://codecov.io/bash)

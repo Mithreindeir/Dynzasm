@@ -1,5 +1,5 @@
 CC = gcc
-EXE = dis
+EXE = dynzasm
 SOURCES = $(wildcard src/*.c src/arch/*.c src/arch/arm/*.c src/arch/mips/*.c src/arch/x86/*.c src/common/*.c)
 OBJS = $(SOURCES:.c=.o)
 UNAME_S := $(shell uname -s)
