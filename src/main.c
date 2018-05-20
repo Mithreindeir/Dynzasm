@@ -8,7 +8,7 @@ void print_help(char *pn)
 	printf("Usage: %s options filename\n", pn);
 	printf("\t--arch=<architecture> Set architecture to be disassembled (x86, arm, or mips\n");
 	printf("\t--mode=<mode> Set the architecture mode (32 or 64)\n");
-	printf("\t--entry=<addr> Set a starting address\n");
+	printf("\t--addr=<addr> Set a starting address\n");
 	printf("\t-a convert ascii to hex\n");
 	printf("If no file is specified stdin will be used\n");
 }
