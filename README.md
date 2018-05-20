@@ -11,6 +11,27 @@ Dynzasm is a fast lightweight disassembly library written in c99 code with no ex
 |ARM| Partial|
 |MIPS| Most |
 
+Includes sample commandline utility
+```bash
+./dynzasm --help
+Usage: ./dynzasm options filename
+	--arch=<architecture> Set architecture to be disassembled (x86, arm, or mips
+	--mode=<mode> Set the architecture mode (32 or 64)
+	--entry=<addr> Set a starting address
+	-a convert ascii to hex
+If no file is specified stdin will be used
+Must specify architecture and mode
+```
+```bash
+echo "55 48 89 e5 48 83 ec 70" | ./dynzasm --arch=x86 --mode=64 -a --addr=0x2172 
+0x002172:	55                            	push	rbp
+0x002173:	48 89 e5                      	mov	rbp, rsp
+0x002176:	48 83 ec 70                   	sub	rsp, 0x70
+
+```
+
+It is also very easy to use as a library. Detailed semantics from disassembly for easy analysis coming soon.
+
 ```C
 #include "disas.h"
 
