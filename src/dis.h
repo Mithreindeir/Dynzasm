@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdarg.h>
 #include "common/common.h"
 
@@ -49,8 +50,8 @@ struct operand_tree {
 			int operand_type;
 			union {
 				char reg[REG_SIZE];
-				unsigned long addr;
-				unsigned long imm;
+				u64 addr;
+				u64 imm;
 			} operand_val;
 		} operand;
 	} body;
@@ -82,8 +83,8 @@ void operand_tree_add(struct operand_tree *node,
 		      struct operand_tree *child);
 /*Convenience initializers for operands*/
 struct operand_tree *operand_reg(const char *reg);
-struct operand_tree *operand_imm(const unsigned long imm);
-struct operand_tree *operand_addr(const unsigned long addr);
+struct operand_tree *operand_imm(const u64 imm);
+struct operand_tree *operand_addr(const u64 addr);
 
 int operand_squash(char *buf, long max, struct operand_tree *tree);
 

@@ -8,10 +8,13 @@ struct disassembler *ds_init(int arch, int mode)
 	ds->root = NULL;
 	ds->instr = NULL, ds->num_instr = 0;
 	ds->root = trie_init(0, NULL);
+	ds->sem_table = hash_table_init(101);
 	if (arch == X86_ARCH) {
 		x86_parse(ds->root, mode);
+		parse_sem_file("src/spec/x86.spec", ds->sem_table);
 	} else if (arch == MIPS_ARCH) {
 		mips_parse(ds->root, mode);
+		parse_sem_file("src/spec/mips.spec", ds->sem_table);
 	} else if (arch == ARM_ARCH) {
 		arm_parse(ds->root, mode);
 	}
@@ -29,6 +32,7 @@ void ds_destroy(struct disassembler *ds)
 	}
 
 	trie_destroy(ds->root);
+	hash_table_destroy(ds->sem_table, (void(*)(void*))&dsem_destroy);
 	free(ds->instr);
 	free(ds);
 }
@@ -36,67 +40,6 @@ void ds_destroy(struct disassembler *ds)
 void ds_decode(struct disassembler *ds, unsigned char *stream, int size,
 	       uint64_t entry)
 {
-	/*
-	if (ds->arch == X86_ARCH) {
-		int iter = 0;
-		int addr = entry;
-		while (iter < size) {
-			struct dis *disas =
-			    x86_disassemble(ds->mode, ds->root,
-					    stream + iter, size - iter,
-					    addr);
-			if (!disas) {
-				iter++;
-				addr++;
-				continue;
-			}
-			iter += disas->used_bytes;
-			addr += disas->used_bytes;
-			disas->address = addr - disas->used_bytes;
-			dis_squash(disas);
-			ds_addinstr(ds, disas);
-		}
-	} else if (ds->arch == MIPS_ARCH) {
-		int iter = 0;
-		int addr = entry;
-		while (iter < size) {
-			struct dis *disas =
-			    mips_disassemble(ds->mode, ds->root,
-					     stream + iter, size - iter,
-					     addr);
-			if (!disas) {
-				iter++;
-				addr++;
-				continue;
-			}
-			iter += disas->used_bytes;
-			addr += disas->used_bytes;
-
-			disas->address = addr - disas->used_bytes;
-			dis_squash(disas);
-			ds_addinstr(ds, disas);
-		}
-	} else if (ds->arch == ARM_ARCH) {
-		int iter = 0;
-		int addr = entry;
-		while (iter < size) {
-			struct dis *disas =
-			    arm_disassemble(ds->mode, ds->root,
-					    stream + iter, size - iter,
-					    addr);
-			if (!disas) {
-				iter++;
-				addr++;
-				continue;
-			}
-			iter += disas->used_bytes;
-			addr += disas->used_bytes;
-
-			disas->address = addr - disas->used_bytes;
-			dis_squash(disas);
-			ds_addinstr(ds, disas);
-		}
-	}*/
 	int iter = 0;
 	int addr = entry;
 	struct dis *disas = NULL;

@@ -18,8 +18,8 @@ struct hash_entry {
 	struct hash_entry *next;
 };
 
-struct hash_table *hash_table_init();
-void hash_table_destroy(struct hash_table *table);
+struct hash_table *hash_table_init(int num_buckets);
+void hash_table_destroy(struct hash_table *table, void(destroy)(void*));
 
 struct hash_entry *hash_entry_init(char *mnemonic, void *value);
 void hash_entry_destroy(struct hash_entry *entry);

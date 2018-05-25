@@ -43,6 +43,9 @@ void disas(int arch, int mode, unsigned char *bytes, long max, uint64_t addr)
 		for (int m=0,t=dis->used_bytes;m<10;m++,t=m<dis->used_bytes)
 			t?printf("%02x ",bytes[biter++]):printf("   ");
 		printf("\t%s\t%s\n",dis->mnemonic, dis->op_squash);
+		struct hash_entry *e = hash_table_lookup(ds->sem_table, dis->mnemonic);
+		if (!e) continue;
+		print_semantics(dis, e->value);
 	}
 
 	ds_destroy(ds);

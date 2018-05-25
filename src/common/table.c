@@ -1,19 +1,24 @@
 #include "table.h"
 
-struct hash_table *hash_table_init()
+struct hash_table *hash_table_init(int num_buckets)
 {
+	if (num_buckets < 0) return NULL;
 	struct hash_table *table = malloc(sizeof(struct hash_table));
-	table->buckets = NULL, table->num_buckets = 0;
+	table->num_buckets = num_buckets;
+	table->buckets = calloc(num_buckets, sizeof(struct hash_entry*));
 	return table;
 }
 
-void hash_table_destroy(struct hash_table *table)
+void hash_table_destroy(struct hash_table *table, void(destroy)(void*))
 {
 	if (!table) return;
 	for (int i = 0; i < table->num_buckets; i++) {
 		struct hash_entry *cur = table->buckets[i], *next = NULL;
 		while (cur) {
 			next = cur->next;
+			if (cur->value)
+				destroy(cur->value);
+			cur->value = NULL;
 			hash_entry_destroy(cur);
 			cur = next;
 		}
@@ -27,6 +32,7 @@ struct hash_entry *hash_entry_init(char *mnemonic, void *value)
 	struct hash_entry *entry = malloc(sizeof(struct hash_entry));
 	entry->mnemonic = mnemonic, entry->value = value;
 	entry->hash = hash_str(mnemonic);
+	entry->next = NULL;
 	return entry;
 }
 
@@ -51,7 +57,10 @@ struct hash_entry *hash_table_lookup(struct hash_table *table, const char *mnem)
 
 void hash_entry_insert(struct hash_entry **head, struct hash_entry *entry)
 {
-	if (!(*head) && ((*head)=entry)) return;
+	if (!(*head)) {
+		(*head) = entry;
+		return;
+	}
 	struct hash_entry *cur = *head;
 	while (cur->next) cur = cur->next;
 	cur->next = entry;

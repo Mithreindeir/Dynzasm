@@ -117,7 +117,7 @@ struct operand_tree *operand_reg(const char *reg)
 	return tree;
 }
 
-struct operand_tree *operand_imm(const unsigned long imm)
+struct operand_tree *operand_imm(const u64 imm)
 {
 	struct operand_tree *tree = operand_tree_init(DIS_OPER);
 
@@ -127,7 +127,7 @@ struct operand_tree *operand_imm(const unsigned long imm)
 	return tree;
 }
 
-struct operand_tree *operand_addr(const unsigned long addr)
+struct operand_tree *operand_addr(const u64 addr)
 {
 	struct operand_tree *tree = operand_tree_init(DIS_OPER);
 
@@ -160,7 +160,7 @@ int operand_squash(char *buf, long max, struct operand_tree *tree)
 	if (tree->type == DIS_OPER) {
 		if (tree->body.operand.operand_type == DIS_ADDR) {
 			iter +=
-			    snprintf(buf + iter, max - iter, "%#lx",
+			    snprintf(buf + iter, max - iter, "%#"PRIx64,
 				     TREE_ADDR(tree));
 		} else if (tree->body.operand.operand_type == DIS_IMM) {
 			int sign = SIGNED(TREE_IMM(tree));
@@ -168,7 +168,7 @@ int operand_squash(char *buf, long max, struct operand_tree *tree)
 				iter +=
 				    snprintf(buf + iter, max - iter, "-");
 			iter +=
-			    snprintf(buf + iter, max - iter, "%#lx",
+			    snprintf(buf + iter, max - iter, "%#"PRIX64,
 				     SIGN(TREE_IMM(tree)));
 		} else if (tree->body.operand.operand_type == DIS_REG) {
 			iter +=
