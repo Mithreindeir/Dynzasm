@@ -45,7 +45,7 @@ void disas(int arch, int mode, unsigned char *bytes, long max, uint64_t addr)
 		printf("\t%s\t%s\n",dis->mnemonic, dis->op_squash);
 		struct hash_entry *e = hash_table_lookup(ds->sem_table, dis->mnemonic);
 		if (!e) continue;
-		print_semantics(dis, e->value);
+		//print_semantics(dis, e->value);
 	}
 
 	ds_destroy(ds);
