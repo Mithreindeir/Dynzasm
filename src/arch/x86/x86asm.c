@@ -22,6 +22,7 @@ void x86_assemble(char **tokens, int num_tokens, struct hash_entry *instr_head)
 			printf("%s ", instr_head->mnemonic);
 			for (int i = 0; i < e->num_op; i++)
 				printf("%s%s", e->operand[i], (i+1)==e->num_op?"\n":", ");
+			x86_encode(tokens, num_tokens, node, e);
 		}
 		cur = cur->next;
 	}
@@ -30,20 +31,34 @@ void x86_assemble(char **tokens, int num_tokens, struct hash_entry *instr_head)
 /*Checks if the tokens match the operand addressing modes*/
 int x86_classify_operand(char **tokens, int num_tokens, char operands[][MAX_OPER_LEN], int num_operands)
 {
-	int idx = 0;
-	int lidx = 0;
-	int mop = 0;
-	while (idx <= num_tokens) {
-		if((idx<num_tokens&&*tokens[idx]==',') || idx==num_tokens) {
-			if (mop >= num_operands) return 0;
-			if (!x86_match_operand(tokens+lidx, idx-lidx, operands[mop]))
-				return 0;
+	if (!num_operands && !num_tokens) return 1;
+	int idx = 0, len = 0, operand = 0;
+	while ((idx=x86_next_operand(tokens, num_tokens, operand, &len)) != -1) {
+		if (operand >= num_operands) return 0;
+		if (!x86_match_operand(tokens+idx, len, operands[operand]))
+			return 0;
+		operand++;
+	}
+	return 1;
+}
+
+/*Returns the token idx for a operand (delimiters are commas)*/
+int x86_next_operand(char ** tokens, int nt, int op, int *len)
+{
+	int idx = 0, lidx=0;
+	int opr = 0;
+	while (idx <= nt) {
+		if((idx<nt&&*tokens[idx]==',') || idx==nt) {
+			if (opr == op) {
+				*len = idx - lidx;
+				return lidx;
+			}
 			lidx = idx+1;
-			mop++;
+			opr++;
 		}
 		idx++;
 	}
-	return mop == num_operands;
+	return -1;
 }
 
 /*Doesn't Check For Illegal Combinations, but just matches syntax to instructions*/
@@ -103,6 +118,7 @@ int x86_valid_modrm(char **tokens, int num_tokens, int size)
 
 int x86_size(char *tok)
 {
+	if (!tok) return 0;
 	if (!strcmp(tok,"byte")) return 1;
 	if (!strcmp(tok, "word")) return 2;
 	if (!strcmp(tok, "dword")) return 3;
@@ -115,8 +131,50 @@ void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_i
 	char op[3];
 	for (int i = 0; i < e->num_op; i++)
 		op[i] = *e->operand[i];
+	int ei=0,gi=0;
 	/*If the instruction uses modrm encoding*/
-	if ((op[0]=='G'&&op[1]=='E')||(op[0]=='E'&&op[1]=='G')) {
+	if (((gi=0,ei=1,op[0]=='G'&&op[1]=='E'))||((ei=0,gi=1,op[0]=='E'&&op[1]=='G'))) {
+		int idx =0, len = 0;
+		idx=x86_next_operand(tokens, num_tokens, ei, &len);
+		char *base=NULL,*index=NULL;
+		int s=0, ds = 0;
+		uint64_t disp = 0;
+		x86_get_indir(tokens+idx, len, &base,&index,&s,&disp,&ds);
+		if (base) printf("base: %s\n", base);
+		if (index) printf("index: %s\n", index);
+		if (s!=1) printf("scale: %d\n", s);
+		if (ds>0) printf("disp: %#lx\n", disp);
+		(void)gi;
+		(void)n;
+	}
+}
 
+/*Parses an Indirect Memory string and sets the base, index, scale, displacement, and displacement size*/
+void x86_get_indir(char **tokens, int nt, char **b, char **i, int*s, uint64_t*d, int*ds)
+{
+	*b=NULL,*i=NULL,*s=1,*d=0,*ds=0;
+	if (!nt||!tokens) return;
+	int idx = 0, io=-1;
+	char *iter=tokens[0],*l=NULL;
+	while (idx < nt && (l=iter) && (iter=tokens[idx++])) {
+		if (x86_size(iter)) continue;
+		if (*iter=='[') {
+			io=0;
+			continue;
+		}
+		if (*iter==']') break;
+		if (io==0&&get_register_index(iter)!=-1) io++, *b = iter;
+		if ((*l=='+') &&io==1&&get_register_index(iter)!=-1) *i = iter;
+		if ((*l=='*')&&io>0&&get_register_index(iter)==-1) io++, *s = strtol(iter, NULL, 0);
+		if (((*l=='+'||*l=='-')&&get_register_index(iter)==-1)||(io==0&&get_register_index(iter)==-1)) {
+			uint64_t num = strtol(iter, NULL, 0);
+			int nsize = 0;
+			if (num < MAX(8)) nsize = 1;
+			else if (num < MAX(16)) nsize = 2;
+			else if (num < MAX(32)) nsize = 3;
+			else nsize = 4;
+			*d = num, *ds = nsize;
+			io++;
+		}
 	}
 }

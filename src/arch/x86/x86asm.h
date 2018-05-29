@@ -2,6 +2,7 @@
 #define X86_ASM_H
 
 #include <ctype.h>
+#include <stdint.h>
 #include "../../common/table.h"
 #include "../../common/trie.h"
 #include "x86load.h"
@@ -30,6 +31,8 @@ int x86_size(char *tok);
 int x86_valid_modrm(char **tokens, int num_tokens, int size);
 
 void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_instr_entry *e);
+void x86_get_indir(char **tokens, int nt, char **b, char **i, int*scale, uint64_t*d, int*ds);
 
+int x86_next_operand(char ** tokens, int num_tokens, int oidx, int *len);
 
 #endif
