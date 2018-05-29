@@ -7,6 +7,7 @@ struct trie_node *trie_init(unsigned char key, void *value)
 	node->dist = 0;
 	node->key = key;
 	node->value = value;
+	node->parent = NULL;
 	node->children = NULL;
 	node->num_children = 0;
 	node->flags = 0;
@@ -44,7 +45,7 @@ struct trie_node *trie_lookup(struct trie_node *node,
 	return far;
 }
 
-int trie_insert(struct trie_node *root, unsigned char *stream, long max,
+struct trie_node *trie_insert(struct trie_node *root, unsigned char *stream, long max,
 		 void *value, unsigned char flags)
 {
 	struct trie_node *far = root;
@@ -66,10 +67,10 @@ int trie_insert(struct trie_node *root, unsigned char *stream, long max,
 		stream++;
 		max--;
 	}
-	if (far->value) return 1;
+	if (far->value) return NULL;
 	far->value = value;
 	far->flags = flags;
-	return 0;
+	return far;
 }
 
 struct trie_node *trie_node_search(struct trie_node *node,
@@ -112,5 +113,6 @@ void trie_node_insert(struct trie_node *node, struct trie_node *child)
 		memmove(node->children + idx + 1, node->children + idx,
 			size);
 	}
+	child->parent = node;
 	node->children[idx] = child;
 }

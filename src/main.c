@@ -53,6 +53,11 @@ void disas(int arch, int mode, unsigned char *bytes, long max, uint64_t addr)
 
 int main(int argc, char **argv)
 {
+	struct disassembler *ds = ds_init(X86_ARCH, MODE_64B);
+	ds_asm(ds, "mov rax, qword [rax + 0x28]");
+
+	ds_destroy(ds);
+	return 0;
 	if (argc < 2) {
 		printf("%s: No target specified\n%s: Use --help for more information.\n", argv[0], argv[0]);
 	}

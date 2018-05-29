@@ -9,14 +9,15 @@ struct disassembler *ds_init(int arch, int mode)
 	ds->instr = NULL, ds->num_instr = 0;
 	ds->root = trie_init(0, NULL);
 	ds->sem_table = hash_table_init(101);
+	ds->asm_table = hash_table_init(101);
 	if (arch == X86_ARCH) {
-		x86_parse(ds->root, mode);
+		x86_parse(ds->root, ds->asm_table, mode);
 		parse_sem_file("src/spec/x86.spec", ds->sem_table);
 	} else if (arch == MIPS_ARCH) {
-		mips_parse(ds->root, mode);
+		mips_parse(ds->root, ds->asm_table, mode);
 		parse_sem_file("src/spec/mips.spec", ds->sem_table);
 	} else if (arch == ARM_ARCH) {
-		arm_parse(ds->root, mode);
+		arm_parse(ds->root, ds->asm_table, mode);
 	}
 
 	return ds;
@@ -32,6 +33,7 @@ void ds_destroy(struct disassembler *ds)
 	}
 
 	trie_destroy(ds->root);
+	hash_table_destroy(ds->asm_table, NULL);
 	hash_table_destroy(ds->sem_table, (void(*)(void*))&dsem_destroy);
 	free(ds->instr);
 	free(ds);
@@ -76,6 +78,19 @@ struct dis *ds_disas(struct disassembler *ds, unsigned char *stream, int size,
 	dis_squash(disas);
 	ds_addinstr(ds, disas);
 	return disas;
+}
+
+void ds_asm(struct disassembler *ds, char *instr)
+{
+	int num_tokens = 0;
+	char ** tokens = lex(instr, " ", &num_tokens, X86_IDX);
+	struct hash_entry * e = NULL;
+	if (num_tokens)
+		e = hash_table_lookup(ds->asm_table, tokens[0]);
+	if (e)
+		x86_assemble(tokens, num_tokens, e);
+
+	free(tokens);
 }
 
 void ds_addinstr(struct disassembler *ds, struct dis *dis)

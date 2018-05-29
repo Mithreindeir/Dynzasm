@@ -98,7 +98,7 @@ struct dsem *parse_semantic(char **buffer);
 void parse_rwoperands(struct dsem *sem, char *line);
 /*Set flag bits*/
 void parse_rwflags(struct dsem *sem, char *line);
-/**/
+/*Set implied registers*/
 void parse_rwimplied(struct dsem *sem, char *line);
 /*Allocate and initialize a semantic struct*/
 struct dsem *dsem_init(char *mnemonic, int group);

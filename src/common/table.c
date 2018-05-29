@@ -16,7 +16,7 @@ void hash_table_destroy(struct hash_table *table, void(destroy)(void*))
 		struct hash_entry *cur = table->buckets[i], *next = NULL;
 		while (cur) {
 			next = cur->next;
-			if (cur->value)
+			if (cur->value && destroy)
 				destroy(cur->value);
 			cur->value = NULL;
 			hash_entry_destroy(cur);
@@ -62,8 +62,13 @@ void hash_entry_insert(struct hash_entry **head, struct hash_entry *entry)
 		return;
 	}
 	struct hash_entry *cur = *head;
-	while (cur->next) cur = cur->next;
-	cur->next = entry;
+	while (cur->next && !!strcmp(cur->mnemonic, entry->mnemonic)) cur = cur->next;
+	if (!cur->next) {
+		cur->next = entry;
+	} else {
+		entry->next = cur->next;
+		cur->next = entry;
+	}
 }
 
 struct hash_entry *hash_entry_lookup(struct hash_entry *head, const char *mnem, unsigned long hash)

@@ -7,12 +7,14 @@
 #include <stdint.h>
 #include "arch/x86/x86load.h"
 #include "arch/x86/x86.h"
+#include "arch/x86/x86asm.h"
 #include "arch/mips/mload.h"
 #include "arch/mips/mips.h"
 #include "arch/arm/aload.h"
 #include "arch/arm/arm.h"
 #include "dis.h"
 #include "dss.h"
+#include "lex.h"
 #include "common/trie.h"
 #include "common/table.h"
 
@@ -40,6 +42,7 @@ struct disassembler {
 
 	struct trie_node *root;
 	struct hash_table *sem_table;
+	struct hash_table *asm_table;
 };
 
 /*Returns new disassembler struct given arch and mode*/
@@ -50,6 +53,8 @@ void ds_decode(struct disassembler *ds, unsigned char *stream, int size,
 /*Disassembles a single instruction starting at addr from the stream*/
 struct dis *ds_disas(struct disassembler *ds, unsigned char *stream, int size,
 		     uint64_t addr);
+
+void ds_asm(struct disassembler *ds, char *instr);
 /*Appends disassembly to the end of the array*/
 void ds_addinstr(struct disassembler *ds, struct dis *dis);
 /*Frees memory used by disassembler struct*/

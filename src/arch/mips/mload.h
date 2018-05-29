@@ -6,6 +6,7 @@
 #include <string.h>
 #include "../../common/file.h"
 #include "../../common/trie.h"
+#include "../../common/table.h"
 
 #define MAX_MNEM_SIZE_MIPS 12
 #ifndef MODE_32B
@@ -21,6 +22,6 @@ struct mips_instr_entry {
 	char instr_type;
 };
 
-void mips_parse(struct trie_node *root, int mode);
+void mips_parse(struct trie_node *root, struct hash_table *table, int mode);
 
 #endif

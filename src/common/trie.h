@@ -8,6 +8,7 @@
 /*Opaque Trie structure for disassembly indexing.
  * Branch Nodes can hold flags to resolve lookup conflicts.*/
 struct trie_node {
+	struct trie_node *parent;
 	//Trie children
 	struct trie_node **children;
 	int num_children;
@@ -27,8 +28,8 @@ struct trie_node {
 struct trie_node *trie_init(unsigned char key, void *value);
 void trie_destroy(struct trie_node *node);
 
-//Creates path and inserts a value. Returns 1 on failure
-int trie_insert(struct trie_node *root, unsigned char *stream, long max,
+//Creates path and inserts a value. Returns trie node or NULL on failure
+struct trie_node *trie_insert(struct trie_node *root, unsigned char *stream, long max,
 		 void *value, unsigned char flags);
 //Returns the leaf node or branch if there is a lookup conflict
 struct trie_node *trie_lookup(struct trie_node *root,

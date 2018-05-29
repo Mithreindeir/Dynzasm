@@ -1,6 +1,6 @@
 #include "x86load.h"
 
-void x86_parse(struct trie_node *root, int mode)
+void x86_parse(struct trie_node *root, struct hash_table *table, int mode)
 {
 	FILE *fp = NULL;
 	if (mode == MODE_32B)
@@ -50,11 +50,16 @@ void x86_parse(struct trie_node *root, int mode)
 		/*Convert the key string to raw bytes and insert into trie */
 		unsigned char buffer[32];
 		long blen = ascii_to_hex(buffer, bytes, strlen(bytes));
-		if (trie_insert(root, buffer, blen, entry, flags)) {
+		struct trie_node *leaf;
+		if (root && !(leaf=trie_insert(root, buffer, blen, entry, flags))) {
 			printf("Error duplicate instructions near %s\n", entry->mnemonic);
 			for (int i = 0; i < blen; i++)
 				printf("%02x ", buffer[i]);
 			free(entry);
+		}
+		if (table && leaf) {
+			/*Insert the trie node into the hash table*/
+			hash_table_insert(table, hash_entry_init(entry->mnemonic, leaf));
 		}
 	}
 

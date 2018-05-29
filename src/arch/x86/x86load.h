@@ -6,6 +6,7 @@
 #include <string.h>
 #include "../../common/file.h"
 #include "../../common/trie.h"
+#include "../../common/table.h"
 
 #define MAX_MNEM_SIZE_X86 12
 #define MAX_OPER_LEN 12
@@ -25,6 +26,6 @@ struct x86_instr_entry {
 	int num_op;
 };
 
-void x86_parse(struct trie_node *root, int mode);
+void x86_parse(struct trie_node *root, struct hash_table * table, int mode);
 
 #endif
