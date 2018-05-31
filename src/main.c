@@ -53,9 +53,9 @@ void disas(int arch, int mode, unsigned char *bytes, long max, uint64_t addr)
 
 int main(int argc, char **argv)
 {
-	/*
+	/*if (argc < 2) return 1;
 	struct disassembler *ds = ds_init(X86_ARCH, MODE_64B);
-	ds_asm(ds, "mov eax, dword [eax + ecx * 0x123 + 0x456]");
+	ds_asm(ds, argv[1]);
 
 	ds_destroy(ds);
 	return 0;*/
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 		printf("%s: No target specified\n%s: Use --help for more information.\n", argv[0], argv[0]);
 	}
 	char *file = NULL, *archs = NULL, *modes = NULL, *addrs = NULL;
-	int ascii = 0;
+	int ascii = 0, disassemble = 1;
 	for (int i = 1; i < argc; i++) {
 		if (!strncmp(argv[i], "--", 2)) {
 			if (!strcmp(argv[i]+2, "help")) {
@@ -82,6 +82,8 @@ int main(int argc, char **argv)
 			for (int j = 1; j < len; j++) {
 				if (argv[i][j] == 'a') {
 					ascii = 1;
+				} else if (argv[i][j] == 'A') {
+					disassemble = 0;
 				} else {
 					printf("-%c not a valid argument. Use --help to find valid arguments\n", argv[i][j]);
 				}
@@ -99,6 +101,14 @@ int main(int argc, char **argv)
 	if (addrs)
 		addr = strtol(addrs, NULL, 0);
 
+	if (!disassemble) {
+		if (!file) return 1;
+		struct disassembler *ds = ds_init(X86_ARCH, MODE_64B);
+		ds_asm(ds, file);
+
+		ds_destroy(ds);
+		return 0;
+	}
 	int fd = STDIN_FILENO;
 	if (file)
 		fd = open(file, O_RDWR | O_CREAT, 0666);

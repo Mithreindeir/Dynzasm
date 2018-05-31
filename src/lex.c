@@ -53,7 +53,7 @@ int token_type(char *str, int *len, int type, int ptype)
 		return t_number;
 	} else if (ptype != t_notype && isdigit(str[0])) {
 		int l = 1;
-		while (isdigit(str[++l]));
+		while (isdigit(str[l])) l++;
 		*len = l;
 		return t_number;
 	}
