@@ -25,6 +25,8 @@
 #define MAX(bits) (((unsigned long long)1<<(bits))-1)
 #define X64_SCALE(s) (s==8?3:(s==4?2:(s==2?1:0)))
 
+//#define DEBUG
+
 void x86_assemble(char **tokens, int num_tokens, struct hash_entry *instr_head);
 int x86_classify_operand(char **tokens, int num_tokens, char operands[][MAX_OPER_LEN], int num_operands);
 int x86_match_operand(char **tokens, int num_tokens, char *op_type);

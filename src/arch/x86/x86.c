@@ -143,6 +143,7 @@ long x86_decode_operand(struct operand_tree **opt, int mode, char *operand,
 			/*If the register is set as 4 and in 32 bit mode, scale it down */
 			size = size == 4
 			    && mode == MODE_X86 ? size - 1 : size;
+			size = CHECK_FLAG(flags, OPER_SIZE_OVERRIDE) ? size - 1 : size;
 			*opt =
 			    operand_reg(get_register
 					(REG_BIN_IDX(ridx), size,

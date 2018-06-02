@@ -7,12 +7,11 @@
  * */
 void x86_assemble(char **tokens, int num_tokens, struct hash_entry *instr_head)
 {
-//	for (int i = 0; i < num_tokens; i++)
-//		printf("%s%s", tokens[i], (i+1)==num_tokens?"\n":" ");
 	struct hash_entry *cur = instr_head;
 	while (cur && !strcmp(cur->mnemonic, instr_head->mnemonic)) {
 		struct trie_node *node = cur->value;
 		struct x86_instr_entry *e = node->value;
+		/*If the token string matches the classification of the current instruction node then encode it*/
 		if (x86_classify_operand(tokens+1, num_tokens-1, e->operand, e->num_op)) {
 #ifdef DEBUG
 			printf("%s ", instr_head->mnemonic);
@@ -25,7 +24,7 @@ void x86_assemble(char **tokens, int num_tokens, struct hash_entry *instr_head)
 	}
 }
 
-/*Checks if the tokens match the operand addressing modes*/
+/*Loops through operands and checks if the operands are using the same addressing mode as the instruction*/
 int x86_classify_operand(char **tokens, int num_tokens, char operands[][MAX_OPER_LEN], int num_operands)
 {
 	if (!num_operands && !num_tokens) return 1;
@@ -68,14 +67,14 @@ int x86_match_operand(char **tokens, int num_tokens, char *op_type)
 		int nsize = 0;
 		uint64_t num= 0;
 		char ot = op_type[0];
-		if (ot=='G') {
+		if (ot=='G') { /*Register*/
 			idx = get_register_index(tokens[0]);
 			if (idx != -1 && X86_SIZE_COMPAT(size, REG_SIZE_IDX(idx)) && num_tokens == 1)
 				return 1;
-		} else if (ot == 'E' || ot == 'M') {
+		} else if (ot == 'E' || ot == 'M') {/*Modrm or mem-only modrm*/
 			if (x86_valid_modrm(tokens, num_tokens, op_type[1]))
 				return 1;
-		} else if (ot == 'I' || ot == 'J' || ot == 'A') {
+		} else if (ot == 'I' || ot == 'J' || ot == 'A') {/*Immediate, relative, or call relative*/
 			if (!isdigit(**tokens)) return 0;
 			num = strtol(*tokens, NULL, 0);
 			if (num < MAX(8)) nsize = 1;
@@ -84,44 +83,18 @@ int x86_match_operand(char **tokens, int num_tokens, char *op_type)
 			else nsize = 4;
 			if (X86_SIZE_MIN(op_type[1], nsize)) return 1;
 		}
-		/*
-		switch (op_type[0]) {
-			case 'G':
-				idx = get_register_index(tokens[0]);
-				if (idx != -1 && X86_SIZE_COMPAT(size, REG_SIZE_IDX(idx)) && num_tokens == 1)
-					return 1;
-				break;
-			case 'E':
-				if (x86_valid_modrm(tokens, num_tokens, op_type[1]))
-					return 1;
-				break;
-			case 'M':
-				if (x86_valid_modrm(tokens, num_tokens, 0)||**tokens == '[')
-					return 1;
-				break;
-			case 'I':
-				if (!isdigit(**tokens)) return 0;
-				num = strtol(*tokens, NULL, 0);
-				if (num < MAX(8)) nsize = 1;
-				else if (num < MAX(16)) nsize = 2;
-				else if (num < MAX(32)) nsize = 3;
-				else nsize = 4;
-				if (X86_SIZE_MIN(op_type[1], nsize)) return 1;
-				break;
-			case 'J':
-				if (!isdigit(**tokens)) return 0;
-				num = strtol(*tokens, NULL, 0);
-				if (num < MAX(8)) nsize = 1;
-				else if (num < MAX(16)) nsize = 2;
-				else if (num < MAX(32)) nsize = 3;
-				else nsize = 4;
-				if (X86_SIZE_MIN(op_type[1], nsize)) return 1;
-				break;
-		}
-*/
 	} else {
-		if (!strcmp(tokens[0], op_type)) {
+		if (!strcmp(tokens[0], op_type)) {/*String hardcoded operands*/
 			return 1;
+		}
+		int tridx = get_register_index(tokens[0]);
+		int ridx = get_register_index(op_type);
+		if (ridx != -1 && tridx != -1) {
+			if (tridx==ridx || (REG_BIN_IDX(tridx)==REG_BIN_IDX(ridx)))
+				return 1;
+			//int br = REG_BIN_IDX(ridx), tr = REG_BIN_IDX(tridx);
+			//if (br == tr && (REG_SIZE_IDX(ridx)==(REG_SIZE_IDX(tridx)-1)))
+			//	return 1;
 		}
 	}
 	return 0;
@@ -140,6 +113,7 @@ int x86_valid_modrm(char **tokens, int num_tokens, int size)
 	return 0;
 }
 
+/*Returns operand size given the operand width prefix*/
 int x86_size(char *tok)
 {
 	if (!tok) return 0;
@@ -150,6 +124,7 @@ int x86_size(char *tok)
 	return 0;
 }
 
+/*Encodes the operands then walks backwards from the trie leaf to the root and resolves all flags*/
 void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_instr_entry *e)
 {
 	/*Figure out the default size, so that the encoder can set override bits*/
@@ -201,6 +176,10 @@ void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_i
 	/*If rex prefix*/
 	if ((flags>>2)) {
 		x86_add_pbyte(&barr, &blen, 0x40 + (flags>>2));
+	} if ((flags&2)) {
+		x86_add_pbyte(&barr, &blen, 0x67);
+	} if ((flags&1)) {
+		x86_add_pbyte(&barr, &blen, 0x66);
 	}
 #ifdef DEBUG
 	printf("bstream: ");
@@ -211,6 +190,7 @@ void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_i
 	free(barr);
 }
 
+/*Encodes a operand in the mod/rm addressing mode, using sib if necessary*/
 void x86_encode_modrm(char **tokens, int num_tokens, u8 **barr, int *blen, int os, int as, u8 * flags)
 {
 	u8 modrm=0;
@@ -236,8 +216,10 @@ void x86_encode_modrm(char **tokens, int num_tokens, u8 **barr, int *blen, int o
 			SET_FLAG(*flags, REX_W);
 		}
 		u8 idxr = 0, bsr = 0;
+		int idxs = 0, bss = 0;
 		if (index) {
 			idxr = REG_BIN_IDX(get_register_index(index));
+			idxs = REG_SIZE_IDX(get_register_index(index));
 			if (idxr > 7) {
 				idxr -= 8;
 				SET_FLAG(*flags, REX_X);
@@ -245,10 +227,18 @@ void x86_encode_modrm(char **tokens, int num_tokens, u8 **barr, int *blen, int o
 		}
 		if (base) {
 			bsr = REG_BIN_IDX(get_register_index(base));
+			bss = REG_SIZE_IDX(get_register_index(base));
 			if (bsr > 7) {
 				bsr -= 8;
 				SET_FLAG(*flags, REX_B);
 			}
+		}
+		if (base && index && bss != idxs) {
+			printf("Address size mismatch\n");
+			exit(1);
+		}
+		if (bss == (as-1) || idxs == (as-1)) {
+			SET_FLAG(*flags, ADDR_SIZE_OVERRIDE);
 		}
 		if (ds>1) ds = 4;
 		if (s || index) {/*If scale or index, then using SIB encoding*/
@@ -317,6 +307,7 @@ int x86_get_indir(char **tokens, int nt, char **b, char **i, int*s, uint64_t*d, 
 	return sz;
 }
 
+/*Allocates and appends a byte*/
 void x86_add_byte(u8 **barr, int *len, u8 b)
 {
 	int l = *len;
@@ -329,6 +320,7 @@ void x86_add_byte(u8 **barr, int *len, u8 b)
 	*barr = arr;
 }
 
+/*Allocates and adds a byte prefix*/
 void x86_add_pbyte(u8 **barr, int *len, u8 b)
 {
 	int l = *len;
