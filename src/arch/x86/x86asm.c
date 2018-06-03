@@ -71,10 +71,12 @@ int x86_match_operand(char **tokens, int num_tokens, char *op_type)
 			idx = get_register_index(tokens[0]);
 			if (idx != -1 && X86_SIZE_COMPAT(size, REG_SIZE_IDX(idx)) && num_tokens == 1)
 				return 1;
-		} else if (ot == 'E' || ot == 'M') {/*Modrm or mem-only modrm*/
+		} else if (ot == 'E' || ot == 'M' || ot == 'O') {/*Modrm or mem-only modrm*/
 			if (x86_valid_modrm(tokens, num_tokens, op_type[1]))
 				return 1;
 		} else if (ot == 'I' || ot == 'J' || ot == 'A') {/*Immediate, relative, or call relative*/
+			if (**tokens == '+') tokens++;
+			if (**tokens == '-') tokens++;
 			if (!isdigit(**tokens)) return 0;
 			num = strtol(*tokens, NULL, 0);
 			if (num < MAX(8)) nsize = 1;
@@ -90,11 +92,7 @@ int x86_match_operand(char **tokens, int num_tokens, char *op_type)
 		int tridx = get_register_index(tokens[0]);
 		int ridx = get_register_index(op_type);
 		if (ridx != -1 && tridx != -1) {
-			if (tridx==ridx || (REG_BIN_IDX(tridx)==REG_BIN_IDX(ridx)))
-				return 1;
-			//int br = REG_BIN_IDX(ridx), tr = REG_BIN_IDX(tridx);
-			//if (br == tr && (REG_SIZE_IDX(ridx)==(REG_SIZE_IDX(tridx)-1)))
-			//	return 1;
+			if (tridx==ridx) return 1;
 		}
 	}
 	return 0;
@@ -148,11 +146,14 @@ void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_i
 			if (blen) barr[0] |= (reg<<3);
 			else x86_add_byte(&barr, &blen, reg<<3);
 		} else if (*e->operand[i]=='I'||*e->operand[i]=='J'||*e->operand[i]=='A') {
+			int neg = 1;
 			if (e->operand[i][1]=='b') {
+				if (*tokens[idx]=='-') neg=-1, idx++;
 				int off = (*e->operand[i]=='J'||*e->operand[i]=='A')?n->dist+1:0;
-				x86_add_byte(&barr, &blen, strtol(tokens[idx], NULL, 0)-off);
+				x86_add_byte(&barr, &blen, neg*strtol(tokens[idx], NULL, 0)-off);
 			} else if (e->operand[i][1]=='v'||e->operand[i][1]=='d') {
-				uint32_t v = strtol(tokens[idx], NULL, 0);
+				if (*tokens[idx]=='-') neg=-1, idx++;
+				uint32_t v = neg*strtol(tokens[idx], NULL, 0);
 				if (*e->operand[i]=='J'||*e->operand[i]=='A')
 					v -= n->dist + 4;
 				for (int i = 0; i < 4; i++)
