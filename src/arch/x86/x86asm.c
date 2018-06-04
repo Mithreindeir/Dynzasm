@@ -3,25 +3,49 @@
 /*Loop through possible instructions and remove the ones with
  * mismatches addressing modes. Then attempt to encode using the
  * instructions encoding. Print errors if any. Resolve flags backwards
- * from leaf in trie node.
+ * from leaf in trie node. Returns the shortest encoding
  * */
-void x86_assemble(char **tokens, int num_tokens, struct hash_entry *instr_head)
+u8 *x86_assemble(char **tokens, int num_tokens, int mode, struct hash_entry *instr_head, int *len)
 {
 	struct hash_entry *cur = instr_head;
+	u8 ** enc = NULL, * barr = NULL;
+	int * nsize = 0, nenc = 0, narr = 0;
 	while (cur && !strcmp(cur->mnemonic, instr_head->mnemonic)) {
 		struct trie_node *node = cur->value;
 		struct x86_instr_entry *e = node->value;
-		/*If the token string matches the classification of the current instruction node then encode it*/
+		/*If token array matches the classification of the current instruction node then encode it*/
 		if (x86_classify_operand(tokens+1, num_tokens-1, e->operand, e->num_op)) {
-#ifdef DEBUG
-			printf("%s ", instr_head->mnemonic);
-			for (int i = 0; i < e->num_op; i++)
-				printf("%s%s", e->operand[i], (i+1)==e->num_op?"\n":", ");
-#endif
-			x86_encode(tokens+1, num_tokens-1, node, e);
+			u8 *barr=NULL;
+			int narr=0;
+			barr=x86_encode(tokens+1, num_tokens-1, mode, node, e, &narr);
+			if (narr) {
+				nenc++;
+				if (!enc) enc = malloc(sizeof(u8*));
+				else enc = realloc(enc, sizeof(u8*)*nenc);
+				if (!nsize) nsize = malloc(sizeof(int));
+				else nsize = realloc(nsize, sizeof(int)*nenc);
+				enc[nenc-1] = barr, nsize[nenc-1] = narr;
+			} else {
+				free(barr);
+			}
 		}
 		cur = cur->next;
 	}
+	/*Return the shortest encoding*/
+	if (!enc||!nenc) return NULL;
+	barr = enc[0], narr = nsize[0];
+	for (int i = 0; i < nenc; i++) {
+		if (nsize[i] < narr)
+			barr = enc[i], narr = nsize[i];
+	}
+	for (int i = 0; i < nenc; i++) {
+		if (enc[i] != barr)
+			free(enc[i]);
+	}
+	free(enc);
+	free(nsize);
+	*len = narr;
+	return barr;
 }
 
 /*Loops through operands and checks if the operands are using the same addressing mode as the instruction*/
@@ -123,10 +147,11 @@ int x86_size(char *tok)
 }
 
 /*Encodes the operands then walks backwards from the trie leaf to the root and resolves all flags*/
-void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_instr_entry *e)
+u8 *x86_encode(char**tokens,int num_tokens,int mode,struct trie_node *n,struct x86_instr_entry *e,int*alen)
 {
+	*alen = 0;
 	/*Figure out the default size, so that the encoder can set override bits*/
-	int os = DEF_OPER_SIZE(2), as = DEF_ADDR_SIZE(2);
+	int os = DEF_OPER_SIZE(mode), as = DEF_ADDR_SIZE(mode);
 	u8 *barr = NULL;
 	u8 flags = 0;
 	int blen = 0, idx = 0, len = 0;
@@ -134,8 +159,18 @@ void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_i
 		if (!isupper(*e->operand[i])) continue;
 		idx = x86_next_operand(tokens, num_tokens, i, &len);
 		if (*e->operand[i]=='E' || *e->operand[i]=='M') {
-			x86_encode_modrm(tokens+idx, len, &barr, &blen, os, as, &flags);
-		} else if (*e->operand[i]=='G') {
+			if (!x86_encode_modrm(tokens+idx, len, &barr, &blen, os, as, &flags))
+				return 0;
+		} else if (*e->operand[i] == 'O') {
+			char *base=NULL,*index=NULL;
+			int s=0, ds = 0;
+			uint64_t disp = 0;
+			int sz=x86_get_indir(tokens, num_tokens, &base,&index,&s,&disp,&ds);
+			(void)sz;
+			if (base || index || s || (as!=ds)) return 0;
+			for (int i = 0; i < (ds==4?8:4); i++)
+				x86_add_byte(&barr, &blen, ((u8*)&disp)[i]);
+		} else if (*e->operand[i] == 'G') {
 			int reg = get_register_index(tokens[idx]);
 			if (reg == -1) continue;
 			reg = REG_BIN_IDX(reg);
@@ -176,23 +211,19 @@ void x86_encode(char **tokens, int num_tokens, struct trie_node *n, struct x86_i
 	}
 	/*If rex prefix*/
 	if ((flags>>2)) {
+		if (mode != MODE_X64) return barr;
 		x86_add_pbyte(&barr, &blen, 0x40 + (flags>>2));
 	} if ((flags&2)) {
 		x86_add_pbyte(&barr, &blen, 0x67);
 	} if ((flags&1)) {
 		x86_add_pbyte(&barr, &blen, 0x66);
 	}
-#ifdef DEBUG
-	printf("bstream: ");
-#endif
-	for (int i = 0; i < blen; i++)
-		printf("%02x ", barr[i]);
-	printf("\n");
-	free(barr);
+	*alen = blen;
+	return barr;
 }
 
 /*Encodes a operand in the mod/rm addressing mode, using sib if necessary*/
-void x86_encode_modrm(char **tokens, int num_tokens, u8 **barr, int *blen, int os, int as, u8 * flags)
+int x86_encode_modrm(char **tokens, int num_tokens, u8 **barr, int *blen, int os, int as, u8 * flags)
 {
 	u8 modrm=0;
 	int reg;
@@ -235,8 +266,7 @@ void x86_encode_modrm(char **tokens, int num_tokens, u8 **barr, int *blen, int o
 			}
 		}
 		if (base && index && bss != idxs) {
-			printf("Address size mismatch\n");
-			exit(1);
+			return 0;
 		}
 		if (bss == (as-1) || idxs == (as-1)) {
 			SET_FLAG(*flags, ADDR_SIZE_OVERRIDE);
@@ -273,6 +303,7 @@ void x86_encode_modrm(char **tokens, int num_tokens, u8 **barr, int *blen, int o
 		for (int i = 0; i < ds; i++)
 			x86_add_byte(barr, blen, ((u8*)&disp)[i]);
 	}
+	return 1;
 }
 
 /*Parses an Indirect Memory string and sets the base, index, scale, displacement, and displacement size*/
@@ -329,6 +360,7 @@ void x86_add_pbyte(u8 **barr, int *len, u8 b)
 	u8 *arr = *barr;
 	if (!arr) arr = malloc(l);
 	else arr = realloc(arr, l);
+	arr[l-1] = 0;
 	memmove(arr+1, arr, l-1);
 	arr[0] = b;
 	*len = l;

@@ -24,7 +24,7 @@ enum token_type {
 	t_number
 };
 
-char **lex(char *string, char *delim, int *num_tokens, int type);
+char **lex(char *string, int *start, char *delim, int *num_tokens, int type);
 int token_type(char *str, int *len, int type, int ptype);
 
 #endif

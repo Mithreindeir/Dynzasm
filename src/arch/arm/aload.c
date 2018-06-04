@@ -35,15 +35,16 @@ void arm_parse(struct trie_node *root, struct hash_table *table, int mode)
 		unsigned char buffer[32];
 		long blen = ascii_to_hex(buffer, bytes, strlen(bytes));
 
-		struct trie_node *leaf;
-		if (root && !(leaf=trie_insert(root, buffer, blen, entry, flags))) {
+		struct trie_node *leaf = root ? trie_insert(root, buffer, blen, entry, flags) : NULL;
+		if (table && leaf) {
+			/*Insert the trie node into the hash table*/
+			hash_table_insert(table, hash_entry_init(entry->mnemonic, leaf));
+		}
+		if (!leaf) {
 			printf("Error duplicate instructions near %s\n", entry->mnemonic);
 			for (int i = 0; i < blen; i++)
 				printf("%02x ", buffer[i]);
 			free(entry);
-		}
-		if (table && leaf) {
-			hash_table_insert(table, hash_entry_init(entry->mnemonic, leaf));
 		}
 	}
 	fclose(fp);

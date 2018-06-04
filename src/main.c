@@ -11,6 +11,7 @@ void print_help(char *pn)
 	printf("\t--mode=<mode> Set the architecture mode (32 or 64)\n");
 	printf("\t--addr=<addr> Set a starting address\n");
 	printf("\t-a convert ascii to hex\n");
+	printf("\t-A assemble\n");
 	printf("If no file is specified stdin will be used\n");
 }
 
@@ -101,14 +102,6 @@ int main(int argc, char **argv)
 	if (addrs)
 		addr = strtol(addrs, NULL, 0);
 
-	if (!disassemble) {
-		if (!file) return 1;
-		struct disassembler *ds = ds_init(X86_ARCH, MODE_64B);
-		ds_asm(ds, file);
-
-		ds_destroy(ds);
-		return 0;
-	}
 	int fd = STDIN_FILENO;
 	if (file)
 		fd = open(file, O_RDWR | O_CREAT, 0666);
@@ -120,11 +113,12 @@ int main(int argc, char **argv)
 	int iter = 0;
 	int blen = 100;
 	unsigned char *bbuf = malloc(blen);
+	memset(bbuf, 0, blen);
 	while (read(fd, &byte, 1) > 0) {
 		if ((iter+1) >= blen) {
 			blen += 100;
 			bbuf = realloc(bbuf, blen);
-			memset(bbuf+iter, 0, blen-iter-1);
+			memset(bbuf+iter, 0, blen-iter);
 		}
 		if (ascii) {
 			if ((byte>='a'&&byte<='f') || (byte>='A'&&byte<='F')|| (byte >= 0x30 && byte <= 0x39))
@@ -139,7 +133,14 @@ int main(int argc, char **argv)
 		free(bbuf);
 		bbuf = abuf;
 	}
-	disas(arch, mode, (unsigned char *)bbuf, iter, addr);
+	if (!disassemble) {
+		struct disassembler *ds = ds_init(arch, mode);
+		ds_asm(ds, (char*)bbuf);
+
+		ds_destroy(ds);
+	} else {
+		disas(arch, mode, (unsigned char *)bbuf, iter, addr);
+	}
 
 	free(bbuf);
 	close(fd);

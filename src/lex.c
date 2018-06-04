@@ -1,10 +1,12 @@
 #include "lex.h"
 
-char **lex(char *string, char *delim, int *num_tokens, int type)
+char **lex(char *string, int *start, char *delim, int *num_tokens, int type)
 {
 	char **tokens = NULL;
-	int nt = 0, ptype = -1;
-	char *iter = string, *max = string + strlen(string);
+	int nt = 0, ptype = -1, sidx = *start;
+	char *iter = string + sidx, *max = string + sidx + strlen(string+sidx);
+	char *end = strchr(string+sidx, '\n');
+	if (end < max) max = end;
 	while (iter < max) {
 		char * token = iter;
 		int ctype=0, clen=0, tlen = 0;
@@ -29,6 +31,7 @@ char **lex(char *string, char *delim, int *num_tokens, int type)
 		iter = token + (tlen?tlen:1);
 		ptype = ctype;
 	}
+	*start = (iter - string) + 1;
 	*num_tokens = nt;
 	return tokens;
 }

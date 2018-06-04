@@ -82,15 +82,29 @@ struct dis *ds_disas(struct disassembler *ds, unsigned char *stream, int size,
 
 void ds_asm(struct disassembler *ds, char *instr)
 {
-	int num_tokens = 0;
-	char ** tokens = lex(instr, " ", &num_tokens, X86_IDX);
-	struct hash_entry * e = NULL;
-	if (num_tokens)
-		e = hash_table_lookup(ds->asm_table, tokens[0]);
-	if (e)
-		x86_assemble(tokens, num_tokens, e);
-
-	free(tokens);
+	if (ds->arch != X86_ARCH) {
+		printf("Assembler support for x86/x64 currently\n");
+		return;
+	}
+	int num_tokens = 0, idx = 0, len = strlen(instr);
+	while (idx < len) {
+		char ** tokens = lex(instr, &idx, " \n", &num_tokens, X86_IDX);
+		struct hash_entry * e = NULL;
+		if (num_tokens)
+			e = hash_table_lookup(ds->asm_table, tokens[0]);
+		if (e) {
+			int alen = 0;
+			u8 *arr=x86_assemble(tokens, num_tokens, ds->mode, e, &alen);
+			for (int i = 0; i < alen; i++) {
+				printf("%02x ", arr[i]);
+			}
+			printf("\n");
+			free(arr);
+		}
+		for (int i = 0; i < num_tokens; i++)
+			free(tokens[i]);
+		free(tokens);
+	}
 }
 
 void ds_addinstr(struct disassembler *ds, struct dis *dis)

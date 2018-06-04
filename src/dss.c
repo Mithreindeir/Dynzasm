@@ -12,11 +12,21 @@ void parse_sem_file(const char *file, struct hash_table *stable)
 		return;
 	}
 	fseek(fp, 0, SEEK_END);
-	size_t len = ftell(fp);
+	int len = ftell(fp);
+	if (len < 0) {
+		printf("Error seeking in file\n");
+		fclose(fp);
+		return;
+	}
 	rewind(fp);
 	char *buffer = malloc(len+1);
 	memset(buffer, 0, len);
-	fread(buffer, 1, len, fp);
+	if (fread(buffer, 1, len, fp) != (size_t)len) {
+		printf("Error reading from file\n");
+		fclose(fp);
+		free(buffer);
+		return;
+	}
 	buffer[len] = 0;
 	char *tbuf = buffer; /*Malleable ptr for parsing function*/
 	struct dsem *sem = NULL;
