@@ -49,7 +49,7 @@ int token_type(char *str, int *len, int type, int ptype)
 		}
 	}
 
-	if (ptype != t_notype && !strncmp(str, "0x", 2) && isxdigit(str[2])) {
+	if (ptype != t_notype && (!strncmp(str,"0X",2)||!strncmp(str,"0x",2)) && isxdigit(str[2])) {
 		int l = 2;
 		while (isxdigit(str[++l]));
 		*len = l;

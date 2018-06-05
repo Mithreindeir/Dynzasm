@@ -6,7 +6,7 @@ UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S), Linux) #LINUX
 	ECHO_MESSAGE = "Linux"
-	CXXFLAGS = -ggdb3 -std=c99 -Wall -Wextra -pedantic
+	CXXFLAGS = -std=c99 -Wall -Wextra -pedantic
 	CFLAGS = $(CXXFLAGS)
 endif
 

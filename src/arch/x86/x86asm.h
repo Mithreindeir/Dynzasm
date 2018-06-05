@@ -10,11 +10,14 @@
 #include "x86strings.h"
 
 #define X86_SIZE_COMPAT(csize, size) ((csize=='q'&&size==4)\
-||(csize=='v'&&(size==3||size==4))\
+||(csize=='v'&&(size==3||size==4||size==2))\
 ||(csize=='d'&&size==3)\
 ||(csize=='w'&&size==2)\
 ||(csize=='b'&&size==1)\
 ||(csize==0))
+
+#define X86_SIZE_IMM(size)\
+((size=='q'?8:(size=='v'||size=='d')?4:(size=='w'?2:(size=='b'))))
 
 #define X86_SIZE_MIN(csize, size) ((csize=='q'&&size<=4)\
 ||(csize=='v'&&size<=4)\

@@ -116,7 +116,7 @@ int x86_match_operand(char **tokens, int num_tokens, char *op_type)
 		int tridx = get_register_index(tokens[0]);
 		int ridx = get_register_index(op_type);
 		if (ridx != -1 && tridx != -1) {
-			if (tridx==ridx) return 1;
+			if (REG_BIN_IDX(tridx)==REG_BIN_IDX(ridx)) return 1;
 		}
 	}
 	return 0;
@@ -156,7 +156,17 @@ u8 *x86_encode(char**tokens,int num_tokens,int mode,struct trie_node *n,struct x
 	u8 flags = 0;
 	int blen = 0, idx = 0, len = 0;
 	for (int i = 0; i < e->num_op; i++) {
-		if (!isupper(*e->operand[i])) continue;
+		int cos = e->operand[i][1];
+		cos = (cos=='v'||cos=='d')&&(flags&1)?'w':cos;
+		if (!isupper(*e->operand[i])) {
+			idx = x86_next_operand(tokens, num_tokens, i, &len);
+			if (!strcmp(e->operand[i], tokens[idx])) continue;
+			int r1 = get_register_index(e->operand[i]), r2 = get_register_index(tokens[idx]);
+			if (REG_BIN_IDX(r1)==REG_BIN_IDX(r2)&&REG_SIZE_IDX(r1)==3&&REG_SIZE_IDX(r2)==2)
+				SET_FLAG(flags, OPER_SIZE_OVERRIDE);
+			else return barr;
+			continue;
+		}
 		idx = x86_next_operand(tokens, num_tokens, i, &len);
 		if (*e->operand[i]=='E' || *e->operand[i]=='M') {
 			if (!x86_encode_modrm(tokens+idx, len, &barr, &blen, os, as, &flags))
@@ -167,12 +177,16 @@ u8 *x86_encode(char**tokens,int num_tokens,int mode,struct trie_node *n,struct x
 			uint64_t disp = 0;
 			int sz=x86_get_indir(tokens, num_tokens, &base,&index,&s,&disp,&ds);
 			(void)sz;
-			if (base || index || s || (as!=ds)) return 0;
+			if (base || index || s || (as!=ds)) return barr;
 			for (int i = 0; i < (ds==4?8:4); i++)
 				x86_add_byte(&barr, &blen, ((u8*)&disp)[i]);
 		} else if (*e->operand[i] == 'G') {
 			int reg = get_register_index(tokens[idx]);
 			if (reg == -1) continue;
+			if (REG_SIZE_IDX(reg) == 4 && os == 3)
+				SET_FLAG(flags, REX_W);
+			if (REG_SIZE_IDX(reg) == 2 && os == 3)
+				SET_FLAG(flags, OPER_SIZE_OVERRIDE);
 			reg = REG_BIN_IDX(reg);
 			if (reg>7) {
 				reg -= 8;
@@ -182,18 +196,12 @@ u8 *x86_encode(char**tokens,int num_tokens,int mode,struct trie_node *n,struct x
 			else x86_add_byte(&barr, &blen, reg<<3);
 		} else if (*e->operand[i]=='I'||*e->operand[i]=='J'||*e->operand[i]=='A') {
 			int neg = 1;
-			if (e->operand[i][1]=='b') {
-				if (*tokens[idx]=='-') neg=-1, idx++;
-				int off = (*e->operand[i]=='J'||*e->operand[i]=='A')?n->dist+1:0;
-				x86_add_byte(&barr, &blen, neg*strtol(tokens[idx], NULL, 0)-off);
-			} else if (e->operand[i][1]=='v'||e->operand[i][1]=='d') {
-				if (*tokens[idx]=='-') neg=-1, idx++;
-				uint32_t v = neg*strtol(tokens[idx], NULL, 0);
-				if (*e->operand[i]=='J'||*e->operand[i]=='A')
-					v -= n->dist + 4;
-				for (int i = 0; i < 4; i++)
-					x86_add_byte(&barr, &blen, ((u8*)&v)[i]);
-			}
+			if (*tokens[idx] == '-') neg=-1, idx++;
+			uint64_t val = neg*strtol(tokens[idx], NULL, 0);
+			if (*e->operand[i]=='J'||*e->operand[i]=='A')
+				val -= n->dist + X86_SIZE_IMM(cos);
+			for (int i = 0; i < X86_SIZE_IMM(cos); i++)
+				x86_add_byte(&barr, &blen, ((u8*)&val)[i]);
 		}
 	}
 	int ops = 0;
@@ -231,6 +239,8 @@ int x86_encode_modrm(char **tokens, int num_tokens, u8 **barr, int *blen, int os
 		modrm |= (3<<6);
 		if (REG_SIZE_IDX(reg) == 4 && os == 3)
 			SET_FLAG(*flags, REX_W);
+		if (REG_SIZE_IDX(reg) == 2 && os == 3)
+			SET_FLAG(*flags, OPER_SIZE_OVERRIDE);
 		reg = REG_BIN_IDX(reg);
 		if (reg > 7) {
 			reg -= 8;

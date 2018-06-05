@@ -115,6 +115,7 @@ long x86_decode_operand(struct operand_tree **opt, int mode, char *operand,
 	/*Set initial size based on defaults and flags */
 
 	int operand_size = DEF_OPER_SIZE(mode) + CHECK_FLAG(flags, REX_W);
+	operand_size = operand_size == 3 && CHECK_FLAG(flags, OPER_SIZE_OVERRIDE) ? 2 : operand_size;
 	int addr_size =
 	    DEF_ADDR_SIZE(mode) - CHECK_FLAG(flags, ADDR_SIZE_OVERRIDE);
 
@@ -190,8 +191,6 @@ long x86_disassemble_operand(struct operand_tree **operand, int mode, u8 addr_mo
 		break;
 	case 'O':;		/*Offset */
 		uint64_t offset = 0;
-		for (int i = 0; i < max; i++)
-			printf("%02x ", stream[i]);
 		iter += get_integer(&offset, addr_size, stream, max);
 		*operand =
 		    x86_indir_operand_tree(op_size, NULL, NULL, 1, offset);
@@ -435,7 +434,6 @@ struct operand_tree *x86_indir_operand_tree(int op_size, const char *base,
 
 	}
 	operand_tree_fmt(indir, "]");
-	printf("FORMAT %s\n", TREE_FORMAT(indir));
 	return indir;
 }
 
@@ -471,7 +469,6 @@ long get_integer(uint64_t * val, int size, u8 * stream, long max)
 	if (size == 4) {
 		if (max < 8)
 			return max;
-		printf("hey\n");
 		*val = (int64_t) * (int64_t *) stream;
 		return 8;
 	} else if (size == 3) {

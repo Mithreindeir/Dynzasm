@@ -88,7 +88,7 @@ void ds_asm(struct disassembler *ds, char *instr)
 	}
 	int num_tokens = 0, idx = 0, len = strlen(instr);
 	while (idx < len) {
-		char ** tokens = lex(instr, &idx, " \n", &num_tokens, X86_IDX);
+		char ** tokens = lex(instr, &idx, " \t\n", &num_tokens, X86_IDX);
 		struct hash_entry * e = NULL;
 		if (num_tokens)
 			e = hash_table_lookup(ds->asm_table, tokens[0]);
