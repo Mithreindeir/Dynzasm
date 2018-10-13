@@ -71,7 +71,7 @@ void mips_decode_operands(struct dis *disas, struct mips_instr_entry *e,
 			operand_tree_add(indir,
 					 operand_imm((int64_t) (int16_t)
 						     IMM(instruction)));
-			strcpy(TREE_FORMAT(indir), "$1($0)");
+			strncpy(TREE_FORMAT(indir), "$1($0)", FMT_SIZE);
 			dis_add_operand(disas, indir);
 		} else {
 			dis_add_operand(disas,
