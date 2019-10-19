@@ -1,7 +1,7 @@
 #include "disas.h"
 #include "dss.h"
-#include "bfile.h"
-#include "file/elf.h"
+//#include "bfile.h"
+//#include "file/elf.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
