@@ -84,12 +84,12 @@ void parse_symfile(char *filename, FILE *header, FILE *cfile)
 
 		int len = strlen(sp);
 		char *sym = malloc(len+1);
-		strcpy(sym, sp);
+		strncpy(sym, sp, len);
 		sym[len] = 0;
 		symbols[ns-1] = sym;
 		len = strlen(mid);
 		char *typ = malloc(len+1);
-		strcpy(typ, mid);
+		strncpy(typ, mid, len);
 		typ[len] = 0;
 		types[nt-1] = typ;
 
@@ -97,7 +97,7 @@ void parse_symfile(char *filename, FILE *header, FILE *cfile)
 	}
 	int flen = strlen(filename);
 	char *fdup = malloc(flen+1);
-	strcpy(fdup, filename);
+	strncpy(fdup, filename, flen);
 	fdup[flen] = 0;
 	char *dot = strchr(fdup, '.');
 	if (dot) *dot = 0;

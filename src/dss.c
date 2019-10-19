@@ -149,7 +149,7 @@ struct dsem *dsem_init(char *mnemonic, int group)
 	sem->group = group, sem->rflags = 0, sem->mflags = 0;
 	int len = strlen(mnemonic);
 	sem->mnemonic = malloc(len+1);
-	strcpy(sem->mnemonic, mnemonic);
+	strncpy(sem->mnemonic, mnemonic, len);
 	sem->mnemonic[len] = 0;
 	sem->read = NULL, sem->nread = 0;
 	sem->write = NULL, sem->nwrite = 0;
@@ -203,7 +203,7 @@ void dsem_addi(struct dsem *sem, char *val, int rw)
 		else
 			sem->implr=realloc(sem->implr, sizeof(int)*sem->nimplr);
 		char *vc = malloc(len+1);
-		strcpy(vc, val);
+		strncpy(vc, val, len);
 		vc[len] = 0;
 		sem->implr[sem->nimplr-1] = vc;
 	}
@@ -214,7 +214,7 @@ void dsem_addi(struct dsem *sem, char *val, int rw)
 		else
 			sem->implw=realloc(sem->implw, sizeof(char*)*sem->nimplw);
 		char *vc = malloc(len+1);
-		strcpy(vc, val);
+		strncpy(vc, val, len);
 		vc[len] = 0;
 		sem->implw[sem->nimplw-1] = vc;
 	}
