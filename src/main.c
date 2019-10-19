@@ -1,5 +1,7 @@
 #include "disas.h"
 #include "dss.h"
+#include "bfile.h"
+#include "file/elf.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -54,12 +56,27 @@ void disas(int arch, int mode, unsigned char *bytes, long max, uint64_t addr)
 
 int main(int argc, char **argv)
 {
-	/*if (argc < 2) return 1;
-	struct disassembler *ds = ds_init(X86_ARCH, MODE_64B);
-	ds_asm(ds, argv[1]);
+	/*
+	if (argc < 2) return 1;
+	struct bfile *file = bfile_init();
+	FILE *f = fopen(argv[1], "r");
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);
+	rewind(f);
+	unsigned char *buffer = malloc(size);
+	fread(buffer, size, 1, f);
+	elf_parse(file, buffer, size);
+	struct bshx *text = bfile_get_shx(file, ".text");
+	if (text) {
+		for (int i = 0; i < text->size; i++)
+			printf("%02x", buffer[text->offset + i]);
+	}
 
-	ds_destroy(ds);
-	return 0;*/
+	fclose(f);
+	bfile_destroy(file);
+	return 0;
+	*/
+	///*
 	if (argc < 2) {
 		printf("%s: No target specified\n%s: Use --help for more information.\n", argv[0], argv[0]);
 	}
@@ -104,7 +121,7 @@ int main(int argc, char **argv)
 
 	int fd = STDIN_FILENO;
 	if (file)
-		fd = open(file, O_RDWR | O_CREAT, 0666);
+		fd = open(file, O_RDWR, 0666);
 	if (fd == -1) {
 		printf("Error opening file\n");
 		exit(1);
@@ -145,4 +162,5 @@ int main(int argc, char **argv)
 	free(bbuf);
 	close(fd);
 	return 0;
+	//*/
 }

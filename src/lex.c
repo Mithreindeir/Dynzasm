@@ -26,6 +26,9 @@ char **lex(char *string, int *start, char *delim, int *num_tokens, int type)
 
 		char *atok = malloc(tlen+1);
 		memcpy(atok, token, tlen);
+		/*Convert to lower case letters only*/
+		for (int i = 0; i < tlen; i++)
+			atok[i] = tolower(atok[i]);
 		atok[tlen] = 0;
 		tokens[nt-1] = atok;
 		iter = token + (tlen?tlen:1);

@@ -32,7 +32,12 @@ u8 *x86_assemble(char **tokens, int num_tokens, int mode, struct hash_entry *ins
 		cur = cur->next;
 	}
 	/*Return the shortest encoding*/
-	if (!enc||!nenc) return NULL;
+	if (!enc||!nenc) {
+		printf("Error encoding ");
+		for (int i = 0; i < num_tokens; i++)
+			printf("%s%s", tokens[i], (i+1)==num_tokens?"\n":" ");
+		return NULL;
+	}
 	barr = enc[0], narr = nsize[0];
 	for (int i = 0; i < nenc; i++) {
 		if (nsize[i] < narr)
@@ -117,6 +122,7 @@ int x86_match_operand(char **tokens, int num_tokens, char *op_type)
 		int ridx = get_register_index(op_type);
 		if (ridx != -1 && tridx != -1) {
 			if (REG_BIN_IDX(tridx)==REG_BIN_IDX(ridx)) return 1;
+			if (REG_BIN_IDX(tridx)>7 && REG_BIN_IDX(ridx)==(REG_BIN_IDX(tridx)-8)) return 1;
 		}
 	}
 	return 0;
@@ -164,6 +170,8 @@ u8 *x86_encode(char**tokens,int num_tokens,int mode,struct trie_node *n,struct x
 			int r1 = get_register_index(e->operand[i]), r2 = get_register_index(tokens[idx]);
 			if (REG_BIN_IDX(r1)==REG_BIN_IDX(r2)&&REG_SIZE_IDX(r1)==3&&REG_SIZE_IDX(r2)==2)
 				SET_FLAG(flags, OPER_SIZE_OVERRIDE);
+			else if (REG_BIN_IDX(r2)>7&&(REG_BIN_IDX(r2)-8)==REG_BIN_IDX(r1)&&(REG_SIZE_IDX(r1)==REG_SIZE_IDX(r2)))
+				SET_FLAG(flags, REX_B);
 			else return barr;
 			continue;
 		}
@@ -323,7 +331,7 @@ int x86_get_indir(char **tokens, int nt, char **b, char **i, int*s, uint64_t*d, 
 	if (!nt||!tokens) return 0;
 	int idx = 0, io=-1;
 	char *iter=tokens[0],*l=NULL;
-	int size=0, sz = 0;
+	int size=0, sz = 0, riter = 0;
 	while (idx < nt && (l=iter) && (iter=tokens[idx++])) {
 		if ((size=x86_size(iter)) && (sz=size)) continue;
 		if (*iter=='[') {
@@ -331,10 +339,12 @@ int x86_get_indir(char **tokens, int nt, char **b, char **i, int*s, uint64_t*d, 
 			continue;
 		}
 		if (*iter==']') break;
-		if (io==0&&get_register_index(iter)!=-1) io++, *b = iter;
-		if ((*l=='+') &&io==1&&get_register_index(iter)!=-1) *i = iter;
-		if ((*l=='*')&&io>0&&get_register_index(iter)==-1) io++, *s = strtol(iter, NULL, 0);
-		if (((*l=='+'||*l=='-')&&get_register_index(iter)==-1)||(io==0&&get_register_index(iter)==-1)) {
+
+		riter = get_register_index(iter);
+		if (io==0&&riter!=-1) io++, *b = iter;
+		if ((*l=='+') &&io==1&&riter!=-1) *i = iter;
+		if ((*l=='*')&&io>0&&riter==-1) io++, *s = strtol(iter, NULL, 0);
+		if (((*l=='+'||*l=='-')&&riter==-1)||(io==0&&riter==-1)) {
 			uint64_t num = strtol(iter, NULL, 0);
 			int nsize = 0;
 			if (num < MAX(8)) nsize = 1;
